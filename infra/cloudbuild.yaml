@@ -1,0 +1,132 @@
+# infra/cloudbuild.yaml — SecondUnit GCP Cloud Build configuration
+# Builds all three services (Simulator, Brain, Hands) and deploys to Cloud Run.
+
+substitutions:
+  _REGION: us-central1
+  _PROJECT_ID: ${PROJECT_ID}
+
+timeout: 1200s
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: E2_HIGHCPU_8
+
+steps:
+  # ── Simulator ───────────────────────────────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-simulator'
+    args:
+      - build
+      - --tag=gcr.io/${_PROJECT_ID}/secondunit-simulator:${COMMIT_SHA}
+      - --tag=gcr.io/${_PROJECT_ID}/secondunit-simulator:latest
+      - --file=Dockerfile.simulator
+      - .
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-simulator'
+    waitFor: ['build-simulator']
+    args:
+      - push
+      - --all-tags
+      - gcr.io/${_PROJECT_ID}/secondunit-simulator
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'deploy-simulator'
+    waitFor: ['push-simulator']
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - secondunit-simulator
+      - --image=gcr.io/${_PROJECT_ID}/secondunit-simulator:${COMMIT_SHA}
+      - --region=${_REGION}
+      - --platform=managed
+      - --allow-unauthenticated
+      - --min-instances=0
+      - --max-instances=3
+      - --concurrency=80
+      - --memory=512Mi
+      - --cpu=1
+      - --set-secrets=GRAFANA_API_KEY=secondunit-grafana-api-key:latest
+
+  # ── Brain ───────────────────────────────────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-brain'
+    args:
+      - build
+      - --tag=gcr.io/${_PROJECT_ID}/secondunit-brain:${COMMIT_SHA}
+      - --tag=gcr.io/${_PROJECT_ID}/secondunit-brain:latest
+      - --file=Dockerfile.brain
+      - .
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-brain'
+    waitFor: ['build-brain']
+    args:
+      - push
+      - --all-tags
+      - gcr.io/${_PROJECT_ID}/secondunit-brain
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'deploy-brain'
+    waitFor: ['push-brain']
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - secondunit-brain
+      - --image=gcr.io/${_PROJECT_ID}/secondunit-brain:${COMMIT_SHA}
+      - --region=${_REGION}
+      - --platform=managed
+      - --allow-unauthenticated
+      - --min-instances=0
+      - --max-instances=10
+      - --concurrency=100
+      - --memory=1Gi
+      - --cpu=2
+      - --set-secrets=GEMINI_API_KEY=secondunit-gemini-api-key:latest,GRAFANA_API_KEY=secondunit-grafana-api-key:latest
+
+  # ── Hands ───────────────────────────────────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-hands'
+    args:
+      - build
+      - --tag=gcr.io/${_PROJECT_ID}/secondunit-hands:${COMMIT_SHA}
+      - --tag=gcr.io/${_PROJECT_ID}/secondunit-hands:latest
+      - --file=Dockerfile.hands
+      - .
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-hands'
+    waitFor: ['build-hands']
+    args:
+      - push
+      - --all-tags
+      - gcr.io/${_PROJECT_ID}/secondunit-hands
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'deploy-hands'
+    waitFor: ['push-hands']
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - secondunit-hands
+      - --image=gcr.io/${_PROJECT_ID}/secondunit-hands:${COMMIT_SHA}
+      - --region=${_REGION}
+      - --platform=managed
+      - --allow-unauthenticated
+      - --min-instances=0
+      - --max-instances=10
+      - --concurrency=100
+      - --memory=1Gi
+      - --cpu=2
+      - --set-secrets=SLACK_WEBHOOK_URL=secondunit-slack-webhook:latest,GRAFANA_API_KEY=secondunit-grafana-api-key:latest
+
+images:
+  - gcr.io/${_PROJECT_ID}/secondunit-simulator:${COMMIT_SHA}
+  - gcr.io/${_PROJECT_ID}/secondunit-brain:${COMMIT_SHA}
+  - gcr.io/${_PROJECT_ID}/secondunit-hands:${COMMIT_SHA}
+  - gcr.io/${_PROJECT_ID}/secondunit-simulator:latest
+  - gcr.io/${_PROJECT_ID}/secondunit-brain:latest
+  - gcr.io/${_PROJECT_ID}/secondunit-hands:latest

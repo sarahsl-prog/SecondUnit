@@ -1,6 +1,7 @@
 """Brain service."""
 from fastapi import FastAPI
 from brain.agents.sentry import SentryAgent
+from brain.agents.pathologist import PathologistAgent
 from brain.tools.grafana_mcp import GrafanaMCPClient
 from shared.config import Config
 from shared.logger import get_logger
@@ -16,8 +17,13 @@ async def sentry_poll():
     report = await sentry.run()
     
     if report.anomaly_detected:
-        # Trigger Pathologist (next task)
-        return {"status": "anomaly_detected", "report": report.model_dump()}
+        pathologist = PathologistAgent(grafana=grafana, trace_id=sentry.trace_id)
+        diagnosis = await pathologist.run(report)
+        return {
+            "status": "diagnosis_complete",
+            "diagnosis": diagnosis.model_dump(),
+            "trace_id": sentry.trace_id,
+        }
     return {"status": "healthy"}
 
 @app.get("/health")

@@ -35,7 +35,7 @@ async def sentry_poll():
                 cost_estimate=CostEstimate(**decision["cost_estimate"]),
                 approval=decision["approval"],
             )
-            result = await quartermaster.send_to_hands(remediation.model_dump())
+            result = await quartermaster.send_to_hands(remediation.model_dump(mode='json'))
             return {"status": "remediation_sent", "result": result}
         else:
             return {"status": "escalated", "reason": decision["reason"]}

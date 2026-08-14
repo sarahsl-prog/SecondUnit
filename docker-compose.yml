@@ -11,6 +11,12 @@ services:
       - .env
     environment:
       - SERVICE_NAME=simulator
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
 
   brain:
     build:
@@ -22,9 +28,10 @@ services:
       - .env
     environment:
       - SERVICE_NAME=brain
-      - HANDS_SERVICE_URL=http://hands:8080
+      - SECONDUNIT_HANDS_SERVICE_URL=http://hands:8080
     depends_on:
-      - simulator
+      simulator:
+        condition: service_healthy
 
   hands:
     build:
@@ -37,4 +44,11 @@ services:
     environment:
       - SERVICE_NAME=hands
     depends_on:
-      - brain
+      brain:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s

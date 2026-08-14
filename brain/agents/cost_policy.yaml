@@ -1,0 +1,11 @@
+budget:
+  nightly_limit_usd: 50.00
+  preemptible_gpu:
+    max_instances: 4
+    cost_per_hour: 0.50
+    approval_threshold_usd: 10.00
+  standard_instance:
+    approval_threshold_usd: 20.00
+escalation:
+  human_approval_required: true
+  channels: ["slack", "email"]

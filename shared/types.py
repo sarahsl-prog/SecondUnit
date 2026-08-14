@@ -51,3 +51,10 @@ class AgentLog(BaseModel):
     latency_ms: int = 0
     tokens: int = 0
     severity: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+
+class AnomalyReport(BaseModel):
+    anomaly_detected: bool
+    anomaly_type: str
+    severity: Literal["low", "medium", "high", "critical"]
+    affected_nodes: List[str]
+    grafana_context: dict = {}

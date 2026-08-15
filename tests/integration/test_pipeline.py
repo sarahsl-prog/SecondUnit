@@ -9,8 +9,17 @@ import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 from fastapi.testclient import TestClient
 
-from brain.main import app as brain_app
+from brain.main import app as brain_app, reset_dedup_cache
 from simulator.main import app as simulator_app
+
+
+@pytest.fixture(autouse=True)
+def _reset_sentry_dedup_cache():
+    """The /sentry/poll idempotency cache is module-level state; clear it
+    between tests so cross-file test order can't cause a spurious dedup."""
+    reset_dedup_cache()
+    yield
+    reset_dedup_cache()
 
 
 @pytest.fixture

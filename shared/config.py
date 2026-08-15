@@ -9,7 +9,9 @@ class Config(BaseSettings):
     gcp_zone: str = "us-central1-a"
     hands_service_url: str = "http://hands:8080"
     slack_webhook_url: str = ""
-    
+    scheduler_token: str = ""
+    poll_cooldown_seconds: int = 300
+
     class Config:
         env_prefix = "SECONDUNIT_"  # Optional prefix
         env_file = ".env"

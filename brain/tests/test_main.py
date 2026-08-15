@@ -9,8 +9,13 @@ from brain.main import app, reset_dedup_cache
 
 
 @pytest.fixture(autouse=True)
-def _reset_state():
+def _reset_state(tmp_path, monkeypatch):
     reset_dedup_cache()
+    # Quartermaster's nightly-spend file lives at a fixed path by default
+    # (survives across requests, on purpose — see review #6). Point it at
+    # a per-test tmp_path so tests don't share cumulative spend/instance
+    # counts with each other or with a real /tmp file from prior runs.
+    monkeypatch.setattr(brain_main.config, "budget_state_path", str(tmp_path / "budget.json"))
     yield
     reset_dedup_cache()
 

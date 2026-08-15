@@ -9,15 +9,18 @@ import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 from fastapi.testclient import TestClient
 
+import brain.main as brain_main
 from brain.main import app as brain_app, reset_dedup_cache
 from simulator.main import app as simulator_app
 
 
 @pytest.fixture(autouse=True)
-def _reset_sentry_dedup_cache():
-    """The /sentry/poll idempotency cache is module-level state; clear it
-    between tests so cross-file test order can't cause a spurious dedup."""
+def _reset_sentry_state(tmp_path, monkeypatch):
+    """/sentry/poll's idempotency cache and Quartermaster's nightly-spend
+    file are both module/disk-level state; reset them between tests so
+    cross-file test order can't cause a spurious dedup or budget denial."""
     reset_dedup_cache()
+    monkeypatch.setattr(brain_main.config, "budget_state_path", str(tmp_path / "budget.json"))
     yield
     reset_dedup_cache()
 

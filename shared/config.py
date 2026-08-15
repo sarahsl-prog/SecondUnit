@@ -11,6 +11,7 @@ class Config(BaseSettings):
     slack_webhook_url: str = ""
     scheduler_token: str = ""
     poll_cooldown_seconds: int = 300
+    budget_state_path: str = "/tmp/secondunit-budget-state.json"
 
     class Config:
         env_prefix = "SECONDUNIT_"  # Optional prefix

@@ -70,6 +70,7 @@ async def sentry_poll(x_scheduler_token: str = Header(default="")):
         quartermaster = QuartermasterAgent(
             trace_id=sentry.trace_id,
             hands_url=config.hands_service_url,
+            state_path=config.budget_state_path,
         )
         decision = await quartermaster.evaluate(diagnosis)
 

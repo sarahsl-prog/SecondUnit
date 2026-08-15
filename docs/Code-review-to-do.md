@@ -2,7 +2,9 @@
 
 Source: `docs/Code-review-Aug14.md`. All 32 findings verified against the actual codebase on `impl-review-fixes` (2026-08-15) — every one is real and the recommended fix is technically sound. Checklist below tracks implementation.
 
-**Doc bug (not code):** the review's Summary Table says Medium=9/Total=29, but the body lists 12 Medium issues (#16–#27) and 32 total. Fix the table when this doc is closed out.
+**Doc bug (not code) — fixed 2026-08-15:** the review's Summary Table said Medium=9/Total=29, but the body lists 12 Medium issues (#16–#27) and 32 total. Corrected in `docs/Code-review-Aug14.md`.
+
+**Status: all 38 items complete (32 numbered review findings + 6 outstanding-decision follow-ups).** See git log on `impl-review-fixes` for the commit implementing each one, in the same order as this checklist.
 
 ---
 

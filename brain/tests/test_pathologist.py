@@ -147,3 +147,26 @@ async def test_pathologist_falls_back_to_default_frames_when_no_job_data(mock_gr
     assert diagnosis.affected_frames == [1847, 1848]
     assert diagnosis.scene == "scene_47"
     assert diagnosis.failure_type == "unknown"
+
+
+@pytest.mark.asyncio
+async def test_pathologist_classifies_stuck_job_as_unknown(mock_grafana):
+    """The 5th simulator scenario, stuck_job (simulator/failures.py), has
+    no error_log and no corresponding Diagnosis.failure_type literal —
+    "unknown" with escalate_to_human is the correct classification, not
+    a crash or a false-positive match against another failure type."""
+    agent = PathologistAgent(grafana=mock_grafana, trace_id="txn-test")
+    jobs = [
+        {
+            "id": "job-1",
+            "frame": 50,
+            "scene": "scene_47",
+            "assigned_node": "node-5",
+            "status": "failed",
+        }
+    ]
+    with _mock_simulator({"node-5": ""}, jobs):
+        diagnosis = await agent.run(_anomaly(["node-5"]))
+    assert diagnosis.failure_type == "unknown"
+    assert diagnosis.recommended_action == "escalate_to_human"
+    assert diagnosis.affected_frames == [50]

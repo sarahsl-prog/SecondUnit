@@ -1,11 +1,12 @@
 """Hands service."""
 from fastapi import FastAPI
-from hands.routers import opencue, health
+
+from hands.agents.dispatcher import DispatcherAgent
+from hands.agents.surgeon import SurgeonAgent
+from hands.routers import health, opencue
+from hands.tools.gcp_api import GCPComputeClient
 from shared.config import Config
 from shared.logger import get_logger
-from hands.agents.surgeon import SurgeonAgent
-from hands.agents.dispatcher import DispatcherAgent
-from hands.tools.gcp_api import GCPComputeClient
 from shared.types import RemediationRequest
 
 app = FastAPI(title="SecondUnit Hands")
@@ -17,14 +18,14 @@ logger = get_logger(agent_name="Hands")
 
 
 @app.post("/remediate")
-async def remediate(request: dict):
+async def remediate(remediation: RemediationRequest):
     """Entry point from Brain service."""
-    logger.info("remediation_received", trace_id=request.get("trace_id"))
+    logger.info("remediation_received", trace_id=remediation.trace_id)
 
-    remediation = RemediationRequest(**request)
     gcp = GCPComputeClient(
         project_id=config.gcp_project_id,
         zone=config.gcp_zone,
+        dry_run=not config.enable_real_gcp_actions,
     )
     surgeon = SurgeonAgent(
         trace_id=remediation.trace_id,
@@ -38,11 +39,13 @@ async def remediate(request: dict):
         slack_url=config.slack_webhook_url,
         grafana_url=config.grafana_url,
         grafana_key=config.grafana_api_key,
+        fallback_path=config.dispatcher_fallback_path,
     )
+    affected_frames = remediation.diagnosis.affected_frames
     dispatch_result = await dispatcher.notify({
         "failure_type": remediation.diagnosis.failure_type,
         "scene": remediation.diagnosis.scene,
-        "frame": remediation.diagnosis.affected_frames[0] if remediation.diagnosis.affected_frames else None,
+        "frame": affected_frames[0] if affected_frames else None,
         "actions": [a["action"] for a in result["actions_taken"]],
     })
 

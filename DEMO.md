@@ -107,10 +107,14 @@ cost_estimate_usd=4.50  gpus=2  preemptible=true  approved=true
 
 ### Step 6 — Show remediation (15s)
 
-Open the Hands service logs or the OpenCue API mock:
+Open the Hands service logs, or hit the OpenCue mock directly (it lives
+in `hands`, port 8083 — not `brain`'s 8082; there's no GET listing
+endpoint, only the action endpoints Surgeon actually calls):
 
 ```bash
-curl http://localhost:8082/opencue/jobs
+curl -X POST http://localhost:8083/opencue/reroute \
+  -H "Content-Type: application/json" \
+  -d '{"job_id": "job-1847", "target_node": "node-3"}'
 ```
 
 Show that:
@@ -192,7 +196,7 @@ After the demo, attendees can:
 | Problem | Fix |
 |---------|-----|
 | `docker-compose up` fails | Run `uv sync` first, then `docker-compose up --build` |
-| Simulator not emitting metrics | Check `SIMULATOR_PORT=8081` in `.env` |
+| Simulator not emitting metrics | Point Prometheus/Grafana Agent at `GET /simulator/metrics` (pull) — there's no push client yet. Logs: set `GRAFANA_URL`/`GRAFANA_API_KEY` for real Loki push, or leave unset to no-op locally (review #19) |
 | Brain not connecting to Grafana MCP | Verify `GRAFANA_API_KEY` in `.env` |
 | Slack not receiving messages | Check `SLACK_WEBHOOK_URL` in `.env` |
 | All services up but no logs | Run `docker-compose logs -f` to tail all services |

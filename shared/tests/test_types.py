@@ -1,5 +1,6 @@
 # shared/tests/test_types.py
-from shared.types import Diagnosis, Approval, RemediationRequest
+from shared.types import Diagnosis
+
 
 def test_diagnosis_validation():
     d = Diagnosis(

@@ -80,11 +80,12 @@ resource "google_project_iam_member" "artifact_registry_reader" {
   member  = "serviceAccount:${google_service_account.secondunit.email}"
 }
 
-resource "google_project_iam_member" "artifact_registry_writer" {
-  project = var.project_id
-  role    = "roles/artifactregistry.writer"
-  member  = "serviceAccount:${google_service_account.secondunit.email}"
-}
+# NOTE: no artifactregistry.writer binding here on purpose. This service
+# account runs the deployed Cloud Run services (read-only image pulls);
+# Cloud Build pushes images under its own service account
+# (${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com by default), which
+# already has the access it needs without this SA's involvement. Granting
+# writer here would be an unnecessary privilege for a runtime identity.
 
 # ── Outputs ────────────────────────────────────────────────────────────────────
 
@@ -93,5 +94,7 @@ output "service_account_email" {
 }
 
 output "artifact_registry_url" {
-  value = google_artifact_registry_repository.secondunit.repository_url
+  # google_artifact_registry_repository has no repository_url attribute;
+  # this is the documented Artifact Registry Docker URL format.
+  value = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.secondunit.repository_id}"
 }

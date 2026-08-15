@@ -1,3 +1,3 @@
-from hands.routers import opencue, health
+from hands.routers import health, opencue
 
-__all__ = ["opencue", "health"]
+__all__ = ["health", "opencue"]

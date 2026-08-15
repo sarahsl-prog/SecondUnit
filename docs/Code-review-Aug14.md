@@ -540,10 +540,10 @@ description = "VFX render farm health agent using Grafana MCP and Google ADK"
 |---|---|---|
 | Critical | 5 | Test invocation broken, Python/Docker version mismatch, Docker healthchecks/compose broken, unauthenticated stateful GET endpoint |
 | High | 10 | Budget logic, partial-failure reporting, hardcoded remediation, detection not tied to GPU metric, deployment URL errors, config mismatch, IAM over-provisioning, request validation |
-| Medium | 9 | Tooling config, type checking, Grafana/Loki stubs, missing tests, doc inconsistencies |
+| Medium | 12 | Tooling config, type checking, Grafana/Loki stubs, missing tests, doc inconsistencies |
 | Low | 5 | Lint/style noise, unused imports/exceptions |
 
-**Total issues:** 29
+**Total issues:** 32
 
 ---
 

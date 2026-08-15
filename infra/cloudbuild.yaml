@@ -41,6 +41,7 @@ steps:
       - --image=gcr.io/${_PROJECT_ID}/secondunit-simulator:${COMMIT_SHA}
       - --region=${_REGION}
       - --platform=managed
+      - --service-account=secondunit@${_PROJECT_ID}.iam.gserviceaccount.com
       - --allow-unauthenticated
       - --min-instances=0
       - --max-instances=3
@@ -78,13 +79,18 @@ steps:
       - --image=gcr.io/${_PROJECT_ID}/secondunit-brain:${COMMIT_SHA}
       - --region=${_REGION}
       - --platform=managed
+      - --service-account=secondunit@${_PROJECT_ID}.iam.gserviceaccount.com
+      # --allow-unauthenticated + a secret header token on /sentry/poll
+      # (review #5/#7) rather than Cloud Run IAM auth: keeps the other
+      # Brain endpoints reachable for the demo without minting OIDC
+      # tokens in Cloud Scheduler.
       - --allow-unauthenticated
       - --min-instances=0
       - --max-instances=10
       - --concurrency=100
       - --memory=1Gi
       - --cpu=2
-      - --set-secrets=GEMINI_API_KEY=secondunit-gemini-api-key:latest,GRAFANA_API_KEY=secondunit-grafana-api-key:latest
+      - --set-secrets=GEMINI_API_KEY=secondunit-gemini-api-key:latest,GRAFANA_API_KEY=secondunit-grafana-api-key:latest,SCHEDULER_TOKEN=secondunit-scheduler-token:latest
 
   # ── Hands ───────────────────────────────────────────────────────────────────
   - name: 'gcr.io/cloud-builders/docker'
@@ -115,6 +121,7 @@ steps:
       - --image=gcr.io/${_PROJECT_ID}/secondunit-hands:${COMMIT_SHA}
       - --region=${_REGION}
       - --platform=managed
+      - --service-account=secondunit@${_PROJECT_ID}.iam.gserviceaccount.com
       - --allow-unauthenticated
       - --min-instances=0
       - --max-instances=10

@@ -28,10 +28,16 @@ services:
       - .env
     environment:
       - SERVICE_NAME=brain
-      - SECONDUNIT_HANDS_SERVICE_URL=http://hands:8080
+      - HANDS_SERVICE_URL=http://hands:8080
     depends_on:
       simulator:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
 
   hands:
     build:

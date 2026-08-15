@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Config(BaseSettings):
     gemini_api_key: str = ""
@@ -14,6 +14,8 @@ class Config(BaseSettings):
     poll_cooldown_seconds: int = 300
     budget_state_path: str = "/tmp/secondunit-budget-state.json"
 
-    class Config:
-        env_prefix = "SECONDUNIT_"  # Optional prefix
-        env_file = ".env"
+    # No env_prefix: .env.example, docker-compose's env_file, and Cloud Run
+    # --set-secrets all use unprefixed names (GEMINI_API_KEY, not
+    # SECONDUNIT_GEMINI_API_KEY) — a prefix here would silently break every
+    # documented config source (review #15).
+    model_config = SettingsConfigDict(env_file=".env")

@@ -28,7 +28,7 @@ services:
       - .env
     environment:
       - SERVICE_NAME=brain
-      - SECONDUNIT_HANDS_SERVICE_URL=http://hands:8080
+      - HANDS_SERVICE_URL=http://hands:8080
     depends_on:
       simulator:
         condition: service_healthy

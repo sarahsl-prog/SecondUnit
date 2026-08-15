@@ -72,7 +72,7 @@ def test_poll_authorized_with_matching_token(client, monkeypatch):
 
 
 def test_poll_open_when_no_token_configured(client):
-    """Local/demo runs without SECONDUNIT_SCHEDULER_TOKEN stay unauthenticated."""
+    """Local/demo runs without SCHEDULER_TOKEN stay unauthenticated."""
     resp = _poll(client)
     assert resp.status_code == 200
 

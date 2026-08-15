@@ -46,7 +46,7 @@ def _mark_fired(report: AnomalyReport) -> None:
 @app.get("/sentry/poll")
 async def sentry_poll(x_scheduler_token: str = Header(default="")):
     # Only enforced when a token is configured, so local/demo runs without
-    # SECONDUNIT_SCHEDULER_TOKEN set keep working unauthenticated.
+    # SCHEDULER_TOKEN set keep working unauthenticated.
     if config.scheduler_token and x_scheduler_token != config.scheduler_token:
         logger.warning("sentry_poll_unauthorized")
         raise HTTPException(status_code=401, detail="invalid or missing scheduler token")

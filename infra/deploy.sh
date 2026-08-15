@@ -30,6 +30,30 @@ gcloud services enable \
   iam.googleapis.com \
   --quiet
 
+# Set up the runtime service account BEFORE Cloud Build, since the deploy
+# steps in cloudbuild.yaml bind Cloud Run services to it with
+# --service-account= (review outstanding-decision #3) — it must already
+# exist by the time `gcloud run deploy` runs.
+info "Setting up service account..."
+SVC="secondunit@$PROJECT_ID.iam.gserviceaccount.com"
+if gcloud iam service-accounts describe "$SVC" --quiet 2>/dev/null; then
+  ok "Service account exists: $SVC"
+else
+  gcloud iam service-accounts create secondunit \
+    --display-name="SecondUnit Agent" \
+    --quiet 2>/dev/null || true
+  ok "Service account ready: $SVC"
+fi
+
+# Grant Secret Manager access to the service account
+if gcloud iam service-accounts describe "$SVC" --quiet 2>/dev/null; then
+  gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+    --member="serviceAccount:$SVC" \
+    --role="roles/secretmanager.secretAccessor" \
+    --quiet 2>/dev/null || warn "Could not bind Secret Manager IAM role"
+  ok "Granted Secret Manager access to service account"
+fi
+
 # Create secrets
 info "Creating Secret Manager secrets..."
 create_secret() {
@@ -63,12 +87,31 @@ else
   warn "SLACK_WEBHOOK_URL not set — skipping secret creation"
 fi
 
+# Brain's /sentry/poll requires a secret header token in production (review
+# #5/#7 — chosen over --allow-unauthenticated). Generate one if not
+# provided so the endpoint is never accidentally left open.
+if [[ -z "${SCHEDULER_TOKEN:-}" ]]; then
+  SCHEDULER_TOKEN="$(openssl rand -hex 24)"
+  warn "SCHEDULER_TOKEN not set — generated one for this deploy."
+  warn "Save it — Cloud Scheduler needs it to call /sentry/poll: $SCHEDULER_TOKEN"
+fi
+create_secret "secondunit-scheduler-token" "$SCHEDULER_TOKEN"
+
 # Build and deploy via Cloud Build
 info "Submitting Cloud Build for build + deploy..."
 gcloud builds submit \
   --config=infra/cloudbuild.yaml \
   --substitutions="_REGION=$REGION,_PROJECT_ID=$PROJECT_ID" \
   --quiet
+
+# Capture the real Cloud Run URLs. They follow
+# https://<service-name>-<hash>-<region>.a.run.app, NOT the
+# https://<service-name>-<region>.run.app shape used further down before
+# this fix — that shape 404s.
+info "Looking up deployed service URLs..."
+BRAIN_URL=$(gcloud run services describe secondunit-brain --region="$REGION" --format='value(status.url)')
+HANDS_URL=$(gcloud run services describe secondunit-hands --region="$REGION" --format='value(status.url)')
+SIMULATOR_URL=$(gcloud run services describe secondunit-simulator --region="$REGION" --format='value(status.url)')
 
 # Set up Cloud Scheduler — Sentry polling job
 info "Setting up Cloud Scheduler (Sentry poll every minute)..."
@@ -77,8 +120,9 @@ if gcloud scheduler jobs describe "$SCHEDULER_JOB_ID" --location="$REGION" 2>/de
   gcloud scheduler jobs update http "$SCHEDULER_JOB_ID" \
     --location="$REGION" \
     --schedule="*/1 * * * *" \
-    --uri="https://brain-${REGION}.run.app/sentry/poll" \
+    --uri="${BRAIN_URL}/sentry/poll" \
     --http-method=GET \
+    --headers="X-Scheduler-Token=${SCHEDULER_TOKEN}" \
     --time-zone="America/New_York" \
     --quiet
   ok "Updated scheduler job: $SCHEDULER_JOB_ID"
@@ -86,36 +130,16 @@ else
   gcloud scheduler jobs create http "$SCHEDULER_JOB_ID" \
     --location="$REGION" \
     --schedule="*/1 * * * *" \
-    --uri="https://brain-${REGION}.run.app/sentry/poll" \
+    --uri="${BRAIN_URL}/sentry/poll" \
     --http-method=GET \
+    --headers="X-Scheduler-Token=${SCHEDULER_TOKEN}" \
     --time-zone="America/New_York" \
     --quiet
   ok "Created scheduler job: $SCHEDULER_JOB_ID"
 fi
 
-# Set up IAM service accounts (best-effort)
-info "Setting up service accounts..."
-SVC="secondunit@$PROJECT_ID.iam.gserviceaccount.com"
-if gcloud iam service-accounts describe "$SVC" --quiet 2>/dev/null; then
-  ok "Service account exists: $SVC"
-else
-  gcloud iam service-accounts create secondunit \
-    --display-name="SecondUnit Agent" \
-    --quiet 2>/dev/null || true
-  ok "Service account ready: $SVC"
-fi
-
-# Grant Secret Manager access to the service account
-if gcloud iam service-accounts describe "$SVC" --quiet 2>/dev/null; then
-  gcloud projects add-iam-policy-binding "$PROJECT_ID" \
-    --member="serviceAccount:$SVC" \
-    --role="roles/secretmanager.secretAccessor" \
-    --quiet 2>/dev/null || warn "Could not bind Secret Manager IAM role"
-  ok "Granted Secret Manager access to service account"
-fi
-
 ok "SecondUnit deployed successfully!"
-ok "Brain service:   https://brain-${REGION}.run.app"
-ok "Hands service:   https://hands-${REGION}.run.app"
-ok "Simulator:       https://simulator-${REGION}.run.app"
+ok "Brain service:   $BRAIN_URL"
+ok "Hands service:   $HANDS_URL"
+ok "Simulator:       $SIMULATOR_URL"
 info "Check Cloud Run console: https://console.cloud.google.com/run"

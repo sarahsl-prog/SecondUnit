@@ -1,7 +1,7 @@
 [project]
 name = "secondunit"
 version = "0.1.0"
-description = "Add your description here"
+description = "VFX render farm health agent using Grafana MCP and Google ADK"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

@@ -143,3 +143,21 @@ async def test_send_to_hands_raises_after_exhausting_retries(tmp_path):
         await agent.send_to_hands({"trace_id": "txn-test"}, backoff_base_seconds=0)
 
     assert mock_post.call_count == 3
+
+
+@pytest.mark.asyncio
+async def test_quartermaster_escalates_above_approval_threshold(tmp_path):
+    """review #25: no test previously exercised the escalate branch.
+    _estimate_cost only ever returns $4.50 (gpu) or $0.0 (everything
+    else) against a $10 approval_threshold_usd, so escalate is
+    unreachable via any real diagnosis today — lower the threshold on
+    the agent's own loaded policy to exercise the branch directly."""
+    agent = _make_agent(tmp_path)
+    agent.policy["budget"]["preemptible_gpu"]["approval_threshold_usd"] = 1.00
+
+    result = await agent.evaluate(_gpu_diagnosis())
+
+    assert result["decision"] == "escalate"
+    assert result["approval"]["approved"] is False
+    # escalate doesn't spend budget — only approve does
+    assert result["approval"]["budget_remaining_usd"] == 50.0

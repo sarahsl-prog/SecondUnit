@@ -63,6 +63,39 @@ async def test_dispatcher_handles_non_json_webhook_response():
 
 
 @pytest.mark.asyncio
+async def test_dispatcher_adds_grafana_annotation_when_configured():
+    """review #25: no test previously exercised the Grafana-annotation
+    channel at all."""
+    agent = DispatcherAgent(
+        trace_id="txn-test", grafana_url="https://grafana.test", grafana_key="key"
+    )
+    result = await agent.notify({
+        "failure_type": "gpu_memory_exhaustion",
+        "scene": "scene_47",
+        "frame": 1847,
+        "actions": ["reroute_job"],
+    })
+
+    assert result["notification_sent"] is True
+    assert "grafana_annotation" in result["channels"]
+    assert result["grafana_annotation_id"] == "ann-mock-123"
+
+
+@pytest.mark.asyncio
+async def test_dispatcher_skips_grafana_annotation_when_not_configured():
+    agent = DispatcherAgent(trace_id="txn-test")
+    result = await agent.notify({
+        "failure_type": "gpu_memory_exhaustion",
+        "scene": "scene_47",
+        "frame": 1847,
+        "actions": ["reroute_job"],
+    })
+
+    assert "grafana_annotation" not in result["channels"]
+    assert result["grafana_annotation_id"] is None
+
+
+@pytest.mark.asyncio
 async def test_dispatcher_skips_slack_when_no_url():
     agent = DispatcherAgent(trace_id="txn-test", slack_url="")
     result = await agent.notify({

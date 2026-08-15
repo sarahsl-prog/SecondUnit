@@ -38,7 +38,7 @@ Source: `docs/Code-review-Aug14.md`. All 32 findings verified against the actual
 - [x] **#22 — `SurgeonAgent.ACTION_MAP` mutable class attr.** Confirmed, plain dict, no `ClassVar` annotation. Annotate `ClassVar[dict[str, list[str]]]`.
 - [x] **#23 — `Quartermaster.send_to_hands` no retry.** Confirmed: `except httpx.HTTPError` logs and immediately `raise`s, no backoff loop, no Dispatcher fallback despite spec §3.3. Add retry (tenacity or manual) + fallback notify path.
 - [x] **#24 — Dispatcher hardcodes `"mock-ts"`.** Confirmed in `_send_slack` — real `resp.json()` from Slack is discarded. Return the parsed response instead.
-- [ ] **#25 — Missing tests for escalate/deny/non-GPU paths.** Confirmed: `test_quartermaster.py` only has the approve-path test shown above. No deny/escalate/cumulative-cost test, no `gcp=None` Surgeon test, no Dispatcher Grafana-annotation test. Add parameterized coverage.
+- [x] **#25 — Missing tests for escalate/deny/non-GPU paths.** Confirmed: `test_quartermaster.py` only has the approve-path test shown above. No deny/escalate/cumulative-cost test, no `gcp=None` Surgeon test, no Dispatcher Grafana-annotation test. Add parameterized coverage.
 - [x] **#26 — Doc port mismatch.** Confirmed: `DEMO.md:113` says `curl http://localhost:8082/opencue/jobs`; OpenCue mock actually lives on `hands` (port 8083 per `docker-compose.yml`), and the router is `opencue.router` not a `/jobs` path — verify the correct endpoint name when fixing (review suggests `/opencue/reroute`, confirm against `hands/routers/opencue.py`). `README.md`/`DEMO.md:61` simulator references (8081) are correct as-is.
 - [x] **#27 — Placeholder package description.** Confirmed: `pyproject.toml:4` = `"Add your description here"`. Replace with real description.
 

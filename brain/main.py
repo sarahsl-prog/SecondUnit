@@ -43,6 +43,28 @@ def _mark_fired(report: AnomalyReport) -> None:
     _last_fired[_dedup_key(report)] = time.monotonic()
 
 
+async def _notify_hands_unreachable(trace_id: str, error: str) -> None:
+    """Local Dispatcher fallback (design spec §3.3): if Hands is still
+    unreachable after send_to_hands's retries, tell a human directly
+    rather than failing silently. Minimal Slack-only implementation —
+    Brain's container doesn't include hands/agents/dispatcher.py (each
+    service is a separate Docker image, see Dockerfile.brain), so this
+    can't reuse DispatcherAgent directly."""
+    if not config.slack_webhook_url:
+        logger.warning("hands_unreachable_no_notification_channel", trace_id=trace_id)
+        return
+    summary = (
+        f"🚨 *SecondUnit Alert*\nHands service unreachable after retries.\n"
+        f"*Trace:* {trace_id}\n*Error type:* hands_unreachable\n*Error:* {error}"
+    )
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(config.slack_webhook_url, json={"text": summary})
+            resp.raise_for_status()
+    except httpx.HTTPError as slack_error:
+        logger.error("hands_unreachable_fallback_notify_failed", error=str(slack_error))
+
+
 @app.get("/sentry/poll")
 async def sentry_poll(x_scheduler_token: str = Header(default="")):
     # Only enforced when a token is configured, so local/demo runs without
@@ -83,13 +105,17 @@ async def sentry_poll(x_scheduler_token: str = Header(default="")):
                 cost_estimate=CostEstimate(**decision["cost_estimate"]),
                 approval=decision["approval"],
             )
-            result = await quartermaster.send_to_hands(remediation.model_dump(mode='json'))
+            result = await quartermaster.send_to_hands(
+                remediation.model_dump(mode='json'),
+                backoff_base_seconds=config.hands_retry_backoff_seconds,
+            )
             return {"status": "remediation_sent", "result": result}
         else:
             return {"status": "escalated", "reason": decision["reason"]}
 
     except httpx.HTTPError as e:
         logger.error("sentry_poll_hands_unreachable", error=str(e))
+        await _notify_hands_unreachable(sentry.trace_id, str(e))
         return JSONResponse(
             status_code=502,
             content={"status": "error", "error": f"hands service unreachable: {e}"},

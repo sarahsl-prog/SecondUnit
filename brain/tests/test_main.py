@@ -17,6 +17,9 @@ def _reset_state(tmp_path, monkeypatch):
     # a per-test tmp_path so tests don't share cumulative spend/instance
     # counts with each other or with a real /tmp file from prior runs.
     monkeypatch.setattr(brain_main.config, "budget_state_path", str(tmp_path / "budget.json"))
+    # Retry backoff (review #23) doubles for up to 3 attempts by default —
+    # zero it out so failure-path tests don't sleep for real.
+    monkeypatch.setattr(brain_main.config, "hands_retry_backoff_seconds", 0.0)
     yield
     reset_dedup_cache()
 
@@ -92,10 +95,33 @@ def test_poll_returns_structured_error_on_hands_failure(client):
         "httpx.AsyncClient.post",
         new_callable=AsyncMock,
         side_effect=httpx.ConnectError("boom"),
-    ):
+    ) as mock_post:
         resp = client.get("/sentry/poll")
 
     assert resp.status_code == 502
     body = resp.json()
     assert body["status"] == "error"
     assert "boom" in body["error"]
+    # 3 retries (review #23) to Hands; no Slack fallback attempted since
+    # slack_webhook_url is unconfigured by default.
+    assert mock_post.call_count == 3
+
+
+def test_poll_notifies_slack_fallback_when_hands_exhausts_retries(client, monkeypatch):
+    monkeypatch.setattr(brain_main.config, "slack_webhook_url", "https://hooks.slack.test/x")
+
+    posted_urls = []
+
+    async def fake_post(url, **kwargs):
+        posted_urls.append(url)
+        if url == "https://hooks.slack.test/x":
+            return MagicMock(status_code=200, raise_for_status=MagicMock())
+        raise httpx.ConnectError("boom")
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock, side_effect=fake_post):
+        resp = client.get("/sentry/poll")
+
+    assert resp.status_code == 502
+    # 3 failed Hands attempts + 1 successful Slack fallback notification.
+    assert posted_urls.count("https://hooks.slack.test/x") == 1
+    assert len(posted_urls) == 4

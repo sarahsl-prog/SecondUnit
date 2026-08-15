@@ -1,3 +1,6 @@
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import httpx
 import pytest
 
 from brain.agents.quartermaster import QuartermasterAgent
@@ -98,3 +101,44 @@ async def test_quartermaster_spend_persists_across_agent_instances(tmp_path):
     second = QuartermasterAgent(trace_id="txn-2", state_path=state_path)
     result = await second.evaluate(_gpu_diagnosis())
     assert result["approval"]["budget_remaining_usd"] == pytest.approx(50.0 - 4.50 * 2)
+
+
+@pytest.mark.asyncio
+async def test_send_to_hands_retries_then_succeeds(tmp_path):
+    """review #23: a transient failure must not fail the whole remediation
+    — send_to_hands should retry (design spec §3.3: max 3 attempts)."""
+    agent = QuartermasterAgent(
+        trace_id="txn-test", hands_url="http://hands:8080", state_path=tmp_path / "budget.json"
+    )
+    calls = []
+
+    async def fake_post(url, **kwargs):
+        calls.append(url)
+        if len(calls) < 2:
+            raise httpx.ConnectError("transient blip")
+        return MagicMock(
+            status_code=200, json=lambda: {"status": "complete"}, raise_for_status=MagicMock()
+        )
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock, side_effect=fake_post):
+        result = await agent.send_to_hands({"trace_id": "txn-test"}, backoff_base_seconds=0)
+
+    assert result == {"status": "complete"}
+    assert len(calls) == 2
+
+
+@pytest.mark.asyncio
+async def test_send_to_hands_raises_after_exhausting_retries(tmp_path):
+    agent = QuartermasterAgent(
+        trace_id="txn-test", hands_url="http://hands:8080", state_path=tmp_path / "budget.json"
+    )
+
+    with (
+        patch(
+            "httpx.AsyncClient.post", new_callable=AsyncMock, side_effect=httpx.ConnectError("down")
+        ) as mock_post,
+        pytest.raises(httpx.ConnectError),
+    ):
+        await agent.send_to_hands({"trace_id": "txn-test"}, backoff_base_seconds=0)
+
+    assert mock_post.call_count == 3

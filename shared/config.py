@@ -14,6 +14,7 @@ class Config(BaseSettings):
     scheduler_token: str = ""
     poll_cooldown_seconds: int = 300
     budget_state_path: str = "/tmp/secondunit-budget-state.json"
+    hands_retry_backoff_seconds: float = 1.0
 
     # No env_prefix: .env.example, docker-compose's env_file, and Cloud Run
     # --set-secrets all use unprefixed names (GEMINI_API_KEY, not

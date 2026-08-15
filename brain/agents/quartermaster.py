@@ -1,3 +1,4 @@
+import asyncio
 import json
 from datetime import UTC, datetime
 from pathlib import Path
@@ -7,6 +8,11 @@ import yaml
 
 from shared.logger import get_logger
 from shared.types import Approval, CostEstimate, Diagnosis
+
+# Design spec §3.3: retry with exponential backoff, max 3 attempts, before
+# giving up on Hands.
+MAX_HANDS_ATTEMPTS = 3
+HANDS_RETRY_BACKOFF_SECONDS = 1.0
 
 # Single-instance demo persistence for nightly spend tracking. Cloud Run
 # guarantees a writable /tmp (tmpfs), but it does NOT survive instance
@@ -128,20 +134,40 @@ class QuartermasterAgent:
             return CostEstimate(estimated_cost_usd=0.0)
         return CostEstimate(estimated_cost_usd=0.0)
         
-    async def send_to_hands(self, remediation_request: dict) -> dict:
-        """POST approved remediation to Hands service."""
+    async def send_to_hands(
+        self,
+        remediation_request: dict,
+        max_attempts: int = MAX_HANDS_ATTEMPTS,
+        backoff_base_seconds: float = HANDS_RETRY_BACKOFF_SECONDS,
+    ) -> dict:
+        """POST approved remediation to Hands service, retrying with
+        exponential backoff before giving up (design spec §3.3 — previously
+        this raised on the first failure, so a transient network blip
+        failed the whole remediation)."""
         if not self.hands_url:
             self.logger.error("hands_url_not_configured")
             raise ValueError("HANDS_SERVICE_URL not set")
-            
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            try:
-                resp = await client.post(
-                    f"{self.hands_url}/remediate",
-                    json=remediation_request,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPError as e:
-                self.logger.error("hands_unreachable", error=str(e))
-                raise
+
+        last_error: httpx.HTTPError | None = None
+        for attempt in range(1, max_attempts + 1):
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                try:
+                    resp = await client.post(
+                        f"{self.hands_url}/remediate",
+                        json=remediation_request,
+                    )
+                    resp.raise_for_status()
+                    return resp.json()
+                except httpx.HTTPError as e:
+                    last_error = e
+                    self.logger.warning(
+                        "hands_call_failed",
+                        attempt=attempt,
+                        max_attempts=max_attempts,
+                        error=str(e),
+                    )
+                    if attempt < max_attempts:
+                        await asyncio.sleep(backoff_base_seconds * (2 ** (attempt - 1)))
+
+        self.logger.error("hands_unreachable", attempts=max_attempts, error=str(last_error))
+        raise last_error

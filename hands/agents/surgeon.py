@@ -1,8 +1,10 @@
+from typing import ClassVar
+
 import httpx
-from typing import Dict, List
-from shared.types import RemediationRequest
-from shared.logger import get_logger
+
 from hands.tools.gcp_api import GCPComputeClient
+from shared.logger import get_logger
+from shared.types import RemediationRequest
 
 
 class SurgeonAgent:
@@ -11,9 +13,9 @@ class SurgeonAgent:
     # Statuses on an individual action result that count as that action
     # having failed. "unknown" covers actions in ACTION_MAP with no
     # matching branch in _execute_action (defensive — shouldn't happen).
-    FAILURE_STATUSES = {"failed", "unknown"}
+    FAILURE_STATUSES: ClassVar[set[str]] = {"failed", "unknown"}
 
-    ACTION_MAP = {
+    ACTION_MAP: ClassVar[dict[str, list[str]]] = {
         "gpu_memory_exhaustion": ["reroute_job", "spin_up_preemptible"],
         "corrupt_scene_file": ["flag_for_artist", "skip_frame"],
         "network_timeout": ["check_storage_connectivity"],
@@ -27,7 +29,7 @@ class SurgeonAgent:
         self.opencue_url = opencue_url or "http://localhost:8083"
         self.logger = get_logger(trace_id=trace_id, agent_name="Surgeon")
 
-    async def execute(self, request: RemediationRequest) -> Dict:
+    async def execute(self, request: RemediationRequest) -> dict:
         self.logger.info(
             "surgeon_executing",
             failure_type=request.diagnosis.failure_type,
@@ -63,7 +65,7 @@ class SurgeonAgent:
             "gcp_resources_created": gcp_resources,
         }
 
-    async def _execute_action(self, action: str, request: RemediationRequest) -> Dict:
+    async def _execute_action(self, action: str, request: RemediationRequest) -> dict:
         if action == "reroute_job":
             return await self._call_opencue("reroute", {
                 "job_id": f"job-{request.diagnosis.affected_frames[0]}",

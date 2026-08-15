@@ -1,7 +1,8 @@
 """Tests for brain/main.py: /sentry/poll auth, idempotency, error handling."""
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import httpx
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi.testclient import TestClient
 
 import brain.main as brain_main

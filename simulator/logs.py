@@ -5,4 +5,3 @@ class LogEmitter:
 
     async def emit_log(self, node_id: str, message: str, level: str = "error"):
         """Push log to Loki. Stub for now."""
-        pass

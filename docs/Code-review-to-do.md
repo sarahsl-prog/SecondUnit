@@ -29,13 +29,13 @@ Source: `docs/Code-review-Aug14.md`. All 32 findings verified against the actual
 
 ## Medium
 
-- [ ] **#16 — No `pytest.ini_options`/ruff/mypy config, no CI.** Confirmed absent from `pyproject.toml`. Add config block from review; wire into CI once one exists.
-- [ ] **#17 — `mypy` duplicate `main` module.** Confirmed: `brain/main.py`, `hands/main.py`, `simulator/main.py` share bare name, no package roots declared. Fixed by #1's `__init__.py` additions + `explicit_package_bases = true`.
+- [x] **#16 — No `pytest.ini_options`/ruff/mypy config, no CI.** Confirmed absent from `pyproject.toml`. Add config block from review; wire into CI once one exists.
+- [x] **#17 — `mypy` duplicate `main` module.** Confirmed: `brain/main.py`, `hands/main.py`, `simulator/main.py` share bare name, no package roots declared. Fixed by #1's `__init__.py` additions + `explicit_package_bases = true`.
 - [ ] **#18 — `GrafanaMCPClient` fully mocked.** Confirmed: `query_metrics`, `get_dashboard`, `list_incidents` all return static literals; `url`/`api_key`/`httpx.AsyncClient` constructed but never used. Real implementation is a scope decision — **see outstanding questions.**
 - [ ] **#19 — `MetricsEmitter`/`LogEmitter` are no-op stubs.** Confirmed — both methods are `pass`. Same scope question as #18.
 - [ ] **#20 — `datetime.utcnow()` deprecated.** Confirmed in both `Approval.timestamp` and `AgentLog.timestamp` (`shared/types.py`). Replace with `lambda: datetime.now(timezone.utc)` in both places.
 - [ ] **#21 — `shared/logger.py` import-time side effects.** Confirmed: `structlog.configure(...)` and root-logger setup run at module scope. Move into a `configure_logging()` called from each `main.py`.
-- [ ] **#22 — `SurgeonAgent.ACTION_MAP` mutable class attr.** Confirmed, plain dict, no `ClassVar` annotation. Annotate `ClassVar[dict[str, list[str]]]`.
+- [x] **#22 — `SurgeonAgent.ACTION_MAP` mutable class attr.** Confirmed, plain dict, no `ClassVar` annotation. Annotate `ClassVar[dict[str, list[str]]]`.
 - [ ] **#23 — `Quartermaster.send_to_hands` no retry.** Confirmed: `except httpx.HTTPError` logs and immediately `raise`s, no backoff loop, no Dispatcher fallback despite spec §3.3. Add retry (tenacity or manual) + fallback notify path.
 - [ ] **#24 — Dispatcher hardcodes `"mock-ts"`.** Confirmed in `_send_slack` — real `resp.json()` from Slack is discarded. Return the parsed response instead.
 - [ ] **#25 — Missing tests for escalate/deny/non-GPU paths.** Confirmed: `test_quartermaster.py` only has the approve-path test shown above. No deny/escalate/cumulative-cost test, no `gcp=None` Surgeon test, no Dispatcher Grafana-annotation test. Add parameterized coverage.
@@ -44,11 +44,11 @@ Source: `docs/Code-review-Aug14.md`. All 32 findings verified against the actual
 
 ## Low
 
-- [ ] **#28 — Unused `Optional` imports.** Confirmed in `brain/agents/pathologist.py`, `brain/agents/sentry.py` (both import but never use `Optional`); review also names `brain/tools/grafana_mcp.py` — worth double-checking that one specifically since `Optional` is used there in a type hint (`get_dashboard`/method signatures) — re-verify before blindly running `ruff --fix`.
-- [ ] **#29 — Inconsistent import ordering.** Confirmed generally true across files (e.g. `random` after local imports in sentry.py/pathologist.py). Run `ruff --fix` with `I001` once #16 lands.
+- [x] **#28 — Unused `Optional` imports.** Confirmed in `brain/agents/pathologist.py`, `brain/agents/sentry.py` (both import but never use `Optional`); review also names `brain/tools/grafana_mcp.py` — worth double-checking that one specifically since `Optional` is used there in a type hint (`get_dashboard`/method signatures) — re-verify before blindly running `ruff --fix`.
+- [x] **#29 — Inconsistent import ordering.** Confirmed generally true across files (e.g. `random` after local imports in sentry.py/pathologist.py). Run `ruff --fix` with `I001` once #16 lands.
 - [ ] **#30 — Unused exceptions.** Confirmed: `AgentTimeout`, `HandsUnreachable`, `BudgetExceeded` defined in `shared/exceptions.py`, never raised or imported elsewhere. Wire them in (`BudgetExceeded` on deny, `HandsUnreachable` after #23's retry exhaustion, `AgentTimeout` on timeout wrappers) or delete.
 - [ ] **#31 — Dead `DEFAULT_SCENES` import.** Confirmed in `simulator/engine.py:5`, imported, never referenced elsewhere in the file. Remove or use to seed jobs at startup.
-- [ ] **#32 — `typing.List` instead of `list`.** Confirmed throughout `shared/types.py` (`List[str]`, `List[int]` used 4x). Replace with builtin generics, drop the import.
+- [x] **#32 — `typing.List` instead of `list`.** Confirmed throughout `shared/types.py` (`List[str]`, `List[int]` used 4x). Replace with builtin generics, drop the import.
 
 ---
 

@@ -1,4 +1,5 @@
-from typing import Dict, Any
+from typing import Any
+
 
 class GCPComputeClient:
     """Wrapper for GCP Compute Engine API. Stub for local dev."""
@@ -15,5 +16,5 @@ class GCPComputeClient:
             for i in range(count)
         ]
 
-    async def resize_node_pool(self, pool_name: str, size: int) -> Dict[str, Any]:
+    async def resize_node_pool(self, pool_name: str, size: int) -> dict[str, Any]:
         return {"pool": pool_name, "size": size, "status": "ok"}

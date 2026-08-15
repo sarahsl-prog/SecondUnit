@@ -1,6 +1,7 @@
 import pytest
+
 from brain.agents.quartermaster import QuartermasterAgent
-from shared.types import Diagnosis, CostEstimate
+from shared.types import Diagnosis
 
 
 def _make_agent(tmp_path, trace_id="txn-test"):

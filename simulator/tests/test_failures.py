@@ -1,5 +1,6 @@
 # simulator/tests/test_failures.py
 from fastapi.testclient import TestClient
+
 from simulator.main import app
 
 client = TestClient(app)

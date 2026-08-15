@@ -5,12 +5,14 @@ Uses FastAPI TestClient for in-process HTTP calls, with httpx mocked
 for the Brain→Hands call so the full Sentry → Pathologist → Quartermaster
 chain can be verified without a live Hands service.
 """
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
 from fastapi.testclient import TestClient
 
 import brain.main as brain_main
-from brain.main import app as brain_app, reset_dedup_cache
+from brain.main import app as brain_app
+from brain.main import reset_dedup_cache
 from simulator.main import app as simulator_app
 
 

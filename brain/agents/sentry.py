@@ -1,7 +1,9 @@
-from brain.tools.grafana_mcp import GrafanaMCPClient
-from shared.types import AnomalyReport
-from shared.logger import get_logger
 import random
+
+from brain.tools.grafana_mcp import GrafanaMCPClient
+from shared.logger import get_logger
+from shared.types import AnomalyReport
+
 
 class SentryAgent:
     """Detects anomalies by polling Grafana Cloud metrics."""
@@ -69,7 +71,9 @@ class SentryAgent:
                 node = item.get("metric", {}).get("node", "unknown")
         return node, max_value
 
-    def _report(self, anomaly_type: str, metric: str, node: str, value: float, threshold: float) -> AnomalyReport:
+    def _report(
+        self, anomaly_type: str, metric: str, node: str, value: float, threshold: float
+    ) -> AnomalyReport:
         report = AnomalyReport(
             anomaly_detected=True,
             anomaly_type=anomaly_type,

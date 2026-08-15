@@ -1,9 +1,10 @@
-import httpx
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import httpx
+import pytest
+
 from hands.agents.surgeon import SurgeonAgent
-from shared.types import Diagnosis, RemediationRequest, Approval, CostEstimate
+from shared.types import Approval, CostEstimate, Diagnosis, RemediationRequest
 
 
 def _mock_opencue_success():
@@ -29,7 +30,9 @@ def _gpu_remediation(context=None):
             recommended_action="reroute_to_healthy_nodes",
             confidence=0.94,
         ),
-        cost_estimate=CostEstimate(preemptible_gpus=2, estimated_cost_usd=4.50, duration_minutes=15),
+        cost_estimate=CostEstimate(
+            preemptible_gpus=2, estimated_cost_usd=4.50, duration_minutes=15
+        ),
         approval=Approval(approved=True, budget_remaining_usd=245.50),
         context=context or {},
     )

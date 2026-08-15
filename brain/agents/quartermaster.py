@@ -1,10 +1,12 @@
 import json
-import yaml
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from shared.types import Diagnosis, Approval, CostEstimate
-from shared.logger import get_logger
+
 import httpx
+import yaml
+
+from shared.logger import get_logger
+from shared.types import Approval, CostEstimate, Diagnosis
 
 # Single-instance demo persistence for nightly spend tracking. Cloud Run
 # guarantees a writable /tmp (tmpfs), but it does NOT survive instance
@@ -16,7 +18,9 @@ DEFAULT_BUDGET_STATE_PATH = Path("/tmp/secondunit-budget-state.json")
 class QuartermasterAgent:
     """Gates expensive actions against budget/cost rules."""
 
-    def __init__(self, trace_id: str = "", hands_url: str = "", state_path: Path | str | None = None):
+    def __init__(
+        self, trace_id: str = "", hands_url: str = "", state_path: Path | str | None = None
+    ):
         self.trace_id = trace_id
         self.hands_url = hands_url
         self.state_path = Path(state_path) if state_path else DEFAULT_BUDGET_STATE_PATH
@@ -30,7 +34,7 @@ class QuartermasterAgent:
 
     @staticmethod
     def _today() -> str:
-        return datetime.now(timezone.utc).date().isoformat()
+        return datetime.now(UTC).date().isoformat()
 
     def _load_spend_state(self) -> dict:
         """Read today's cumulative spend/instance count, resetting on a new day."""
@@ -81,7 +85,8 @@ class QuartermasterAgent:
             )
         elif cost.estimated_cost_usd <= budget["preemptible_gpu"]["approval_threshold_usd"]:
             decision = "approve"
-            reason = f"Within nightly GPU budget; under ${budget['preemptible_gpu']['approval_threshold_usd']}"
+            approval_threshold = budget["preemptible_gpu"]["approval_threshold_usd"]
+            reason = f"Within nightly GPU budget; under ${approval_threshold}"
         else:
             decision = "escalate"
             reason = "Exceeds auto-approval threshold but within nightly limit"
@@ -119,9 +124,7 @@ class QuartermasterAgent:
                 estimated_cost_usd=4.50,
                 duration_minutes=15,
             )
-        elif diagnosis.failure_type == "corrupt_scene_file":
-            return CostEstimate(estimated_cost_usd=0.0)
-        elif diagnosis.failure_type == "network_timeout":
+        elif diagnosis.failure_type in ("corrupt_scene_file", "network_timeout"):
             return CostEstimate(estimated_cost_usd=0.0)
         return CostEstimate(estimated_cost_usd=0.0)
         

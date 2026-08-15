@@ -5,13 +5,13 @@ import httpx
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import JSONResponse
 
-from brain.agents.sentry import SentryAgent
 from brain.agents.pathologist import PathologistAgent
 from brain.agents.quartermaster import QuartermasterAgent
+from brain.agents.sentry import SentryAgent
 from brain.tools.grafana_mcp import GrafanaMCPClient
 from shared.config import Config
 from shared.logger import get_logger
-from shared.types import AnomalyReport, RemediationRequest, CostEstimate
+from shared.types import AnomalyReport, CostEstimate, RemediationRequest
 
 app = FastAPI(title="SecondUnit Brain")
 config = Config()

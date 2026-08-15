@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from brain.agents.pathologist import PathologistAgent
 from brain.tools.grafana_mcp import GrafanaMCPClient
@@ -47,7 +48,15 @@ def _mock_simulator(node_logs: dict, jobs: list):
 @pytest.mark.asyncio
 async def test_pathologist_diagnoses_gpu_failure(mock_grafana):
     agent = PathologistAgent(grafana=mock_grafana, trace_id="txn-test")
-    jobs = [{"id": "job-1", "frame": 101, "scene": "scene_12", "assigned_node": "node-7", "status": "failed"}]
+    jobs = [
+        {
+            "id": 'job-1',
+            "frame": 101,
+            "scene": 'scene_12',
+            "assigned_node": 'node-7',
+            "status": 'failed',
+        }
+    ]
     with _mock_simulator({"node-7": "CUDA out of memory at frame 101"}, jobs):
         diagnosis = await agent.run(_anomaly(["node-7"]))
 
@@ -60,7 +69,15 @@ async def test_pathologist_diagnoses_gpu_failure(mock_grafana):
 @pytest.mark.asyncio
 async def test_pathologist_diagnoses_corrupt_scene_file(mock_grafana):
     agent = PathologistAgent(grafana=mock_grafana, trace_id="txn-test")
-    jobs = [{"id": "job-1", "frame": 5, "scene": "scene_47", "assigned_node": "node-2", "status": "failed"}]
+    jobs = [
+        {
+            "id": 'job-1',
+            "frame": 5,
+            "scene": 'scene_47',
+            "assigned_node": 'node-2',
+            "status": 'failed',
+        }
+    ]
     with _mock_simulator({"node-2": "Scene file malformed at line 4821"}, jobs):
         diagnosis = await agent.run(_anomaly(["node-2"]))
     assert diagnosis.failure_type == "corrupt_scene_file"
@@ -69,7 +86,15 @@ async def test_pathologist_diagnoses_corrupt_scene_file(mock_grafana):
 @pytest.mark.asyncio
 async def test_pathologist_diagnoses_network_timeout(mock_grafana):
     agent = PathologistAgent(grafana=mock_grafana, trace_id="txn-test")
-    jobs = [{"id": "job-1", "frame": 9, "scene": "scene_47", "assigned_node": "node-4", "status": "failed"}]
+    jobs = [
+        {
+            "id": 'job-1',
+            "frame": 9,
+            "scene": 'scene_47',
+            "assigned_node": 'node-4',
+            "status": 'failed',
+        }
+    ]
     with _mock_simulator({"node-4": "Connection timed out to storage bucket"}, jobs):
         diagnosis = await agent.run(_anomaly(["node-4"]))
     assert diagnosis.failure_type == "network_timeout"
@@ -78,7 +103,15 @@ async def test_pathologist_diagnoses_network_timeout(mock_grafana):
 @pytest.mark.asyncio
 async def test_pathologist_diagnoses_license_failure(mock_grafana):
     agent = PathologistAgent(grafana=mock_grafana, trace_id="txn-test")
-    jobs = [{"id": "job-1", "frame": 3, "scene": "scene_47", "assigned_node": "node-9", "status": "failed"}]
+    jobs = [
+        {
+            "id": 'job-1',
+            "frame": 3,
+            "scene": 'scene_47',
+            "assigned_node": 'node-9',
+            "status": 'failed',
+        }
+    ]
     with _mock_simulator({"node-9": "Arnold license server unreachable"}, jobs):
         diagnosis = await agent.run(_anomaly(["node-9"]))
     assert diagnosis.failure_type == "license_failure"
@@ -88,7 +121,15 @@ async def test_pathologist_diagnoses_license_failure(mock_grafana):
 async def test_pathologist_diagnoses_node12_gpu_failure(mock_grafana):
     """Generalizes past the original node-7-only hardcoding (review #10)."""
     agent = PathologistAgent(grafana=mock_grafana, trace_id="txn-test")
-    jobs = [{"id": "job-1", "frame": 200, "scene": "scene_12", "assigned_node": "node-12", "status": "failed"}]
+    jobs = [
+        {
+            "id": 'job-1',
+            "frame": 200,
+            "scene": 'scene_12',
+            "assigned_node": 'node-12',
+            "status": 'failed',
+        }
+    ]
     with _mock_simulator({"node-12": "CUDA out of memory"}, jobs):
         diagnosis = await agent.run(_anomaly(["node-12"]))
     assert diagnosis.failure_type == "gpu_memory_exhaustion"

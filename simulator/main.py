@@ -1,7 +1,8 @@
 """Simulator service."""
 from fastapi import FastAPI, HTTPException
-from simulator.engine import RenderFarmSimulator
+
 from shared.logger import get_logger
+from simulator.engine import RenderFarmSimulator
 
 app = FastAPI(title="SecondUnit Simulator")
 simulator = RenderFarmSimulator(node_count=8)

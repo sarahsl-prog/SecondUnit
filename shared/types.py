@@ -1,6 +1,8 @@
-from pydantic import BaseModel, Field
-from typing import Literal, List
 from datetime import datetime
+from typing import Literal
+
+from pydantic import BaseModel, Field
+
 
 class Diagnosis(BaseModel):
     failure_type: Literal[
@@ -10,8 +12,8 @@ class Diagnosis(BaseModel):
         "license_failure",
         "unknown",
     ]
-    affected_nodes: List[str]
-    affected_frames: List[int]
+    affected_nodes: list[str]
+    affected_frames: list[int]
     scene: str
     recommended_action: str
     confidence: float = Field(ge=0.0, le=1.0)
@@ -38,7 +40,7 @@ class RemediationRequest(BaseModel):
 class RemediationResult(BaseModel):
     trace_id: str
     status: Literal["success", "partial_failure", "failure"]
-    actions_taken: List[dict] = []
+    actions_taken: list[dict] = []
     dispatcher_summary: dict = {}
 
 class AgentLog(BaseModel):
@@ -56,5 +58,5 @@ class AnomalyReport(BaseModel):
     anomaly_detected: bool
     anomaly_type: str
     severity: Literal["low", "medium", "high", "critical"]
-    affected_nodes: List[str]
+    affected_nodes: list[str]
     grafana_context: dict = {}

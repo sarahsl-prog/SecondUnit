@@ -1,6 +1,6 @@
-from typing import Dict
+
+
 from simulator.nodes import RenderNode
-import httpx
 
 
 class MetricsEmitter:
@@ -8,7 +8,6 @@ class MetricsEmitter:
         self.grafana_url = grafana_url
         self.api_key = api_key
 
-    async def emit_node_metrics(self, nodes: Dict[str, RenderNode]):
+    async def emit_node_metrics(self, nodes: dict[str, RenderNode]):
         """Push node metrics to Grafana. Stub for now."""
         # TODO: Implement OpenTelemetry push
-        pass

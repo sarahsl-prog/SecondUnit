@@ -1,4 +1,5 @@
 import pytest
+
 from brain.agents.sentry import SentryAgent
 from brain.tools.grafana_mcp import GrafanaMCPClient
 
@@ -22,7 +23,10 @@ class FakeGrafana:
 def _metric_result(node: str, value: float) -> dict:
     return {
         "status": "success",
-        "data": {"resultType": "vector", "result": [{"metric": {"node": node}, "value": [1692000000, str(value)]}]},
+        "data": {
+            "resultType": "vector",
+            "result": [{"metric": {"node": node}, "value": [1692000000, str(value)]}],
+        },
     }
 
 

@@ -1,6 +1,8 @@
 # hands/tests/test_dispatcher.py
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
+
 from hands.agents.dispatcher import DispatcherAgent
 
 

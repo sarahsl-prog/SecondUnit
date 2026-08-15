@@ -1,20 +1,20 @@
 import asyncio
-from typing import List, Dict
-from simulator.nodes import RenderNode
-from simulator.jobs import RenderJob
-from simulator.scenes import DEFAULT_SCENES
-from simulator.failures import FAILURE_SCENARIOS
+
 from shared.logger import get_logger
+from simulator.failures import FAILURE_SCENARIOS
+from simulator.jobs import RenderJob
+from simulator.nodes import RenderNode
+from simulator.scenes import DEFAULT_SCENES
 
 logger = get_logger(agent_name="Simulator")
 
 
 class RenderFarmSimulator:
     def __init__(self, node_count: int = 8):
-        self.nodes: Dict[str, RenderNode] = {
+        self.nodes: dict[str, RenderNode] = {
             f"node-{i}": RenderNode(id=f"node-{i}") for i in range(node_count)
         }
-        self.jobs: List[RenderJob] = []
+        self.jobs: list[RenderJob] = []
         self.running = False
         self._task = None
 
@@ -42,7 +42,7 @@ class RenderFarmSimulator:
                     node.gpu_mem_percent = max(10.0, node.gpu_mem_percent - 2.0)
             await asyncio.sleep(5)
 
-    def trigger_scenario(self, scenario_name: str, target_node: str = "", scene: str = "") -> Dict:
+    def trigger_scenario(self, scenario_name: str, target_node: str = "", scene: str = "") -> dict:
         if scenario_name not in FAILURE_SCENARIOS:
             raise ValueError(f"Unknown scenario: {scenario_name}")
 
@@ -94,7 +94,7 @@ class RenderFarmSimulator:
         self.jobs = []
         logger.info("simulator_reset")
 
-    def get_status(self) -> Dict:
+    def get_status(self) -> dict:
         return {
             "nodes": {nid: n.model_dump() for nid, n in self.nodes.items()},
             "job_count": len(self.jobs),

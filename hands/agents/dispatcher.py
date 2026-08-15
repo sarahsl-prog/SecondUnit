@@ -1,20 +1,24 @@
 # hands/agents/dispatcher.py
+from typing import Any
+
 import httpx
-from typing import Dict, Any
+
 from shared.logger import get_logger
 
 
 class DispatcherAgent:
     """Communicates outcomes to humans and logs to Grafana annotations."""
 
-    def __init__(self, trace_id: str = "", slack_url: str = "", grafana_url: str = "", grafana_key: str = ""):
+    def __init__(
+        self, trace_id: str = "", slack_url: str = "", grafana_url: str = "", grafana_key: str = ""
+    ):
         self.trace_id = trace_id
         self.slack_url = slack_url
         self.grafana_url = grafana_url
         self.grafana_key = grafana_key
         self.logger = get_logger(trace_id=trace_id, agent_name="Dispatcher")
 
-    async def notify(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def notify(self, context: dict[str, Any]) -> dict[str, Any]:
         self.logger.info("dispatcher_start", failure_type=context.get("failure_type"))
 
         channels = []
@@ -47,7 +51,7 @@ class DispatcherAgent:
             "summary": summary,
         }
 
-    def _build_summary(self, context: Dict) -> str:
+    def _build_summary(self, context: dict) -> str:
         failure = context.get("failure_type", "unknown")
         scene = context.get("scene", "unknown")
         frame = context.get("frame", "?")
@@ -61,7 +65,7 @@ class DispatcherAgent:
             f"*Status:* Auto-remediated"
         )
 
-    async def _send_slack(self, summary: str, context: Dict) -> Dict:
+    async def _send_slack(self, summary: str, context: dict) -> dict:
         if not self.slack_url:
             return {}
 
@@ -84,6 +88,6 @@ class DispatcherAgent:
                 self.logger.error("slack_send_failed", error=str(e))
                 return {}
 
-    async def _add_grafana_annotation(self, summary: str, context: Dict) -> Dict:
+    async def _add_grafana_annotation(self, summary: str, context: dict) -> dict:
         # Stub: would call Grafana annotation API
         return {"id": "ann-mock-123", "status": "created"}

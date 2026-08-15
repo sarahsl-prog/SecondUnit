@@ -1,6 +1,7 @@
-import structlog
 import logging
 import sys
+
+import structlog
 
 # Ensure structlog output goes to stdout so tests can capture it
 _root_logger = logging.getLogger()

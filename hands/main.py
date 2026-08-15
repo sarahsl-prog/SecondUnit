@@ -1,11 +1,12 @@
 """Hands service."""
 from fastapi import FastAPI
-from hands.routers import opencue, health
+
+from hands.agents.dispatcher import DispatcherAgent
+from hands.agents.surgeon import SurgeonAgent
+from hands.routers import health, opencue
+from hands.tools.gcp_api import GCPComputeClient
 from shared.config import Config
 from shared.logger import get_logger
-from hands.agents.surgeon import SurgeonAgent
-from hands.agents.dispatcher import DispatcherAgent
-from hands.tools.gcp_api import GCPComputeClient
 from shared.types import RemediationRequest
 
 app = FastAPI(title="SecondUnit Hands")
@@ -38,10 +39,11 @@ async def remediate(remediation: RemediationRequest):
         grafana_url=config.grafana_url,
         grafana_key=config.grafana_api_key,
     )
+    affected_frames = remediation.diagnosis.affected_frames
     dispatch_result = await dispatcher.notify({
         "failure_type": remediation.diagnosis.failure_type,
         "scene": remediation.diagnosis.scene,
-        "frame": remediation.diagnosis.affected_frames[0] if remediation.diagnosis.affected_frames else None,
+        "frame": affected_frames[0] if affected_frames else None,
         "actions": [a["action"] for a in result["actions_taken"]],
     })
 

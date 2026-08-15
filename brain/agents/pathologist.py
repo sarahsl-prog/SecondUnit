@@ -1,7 +1,8 @@
 import httpx
+
 from brain.tools.grafana_mcp import GrafanaMCPClient
-from shared.types import AnomalyReport, Diagnosis
 from shared.logger import get_logger
+from shared.types import AnomalyReport, Diagnosis
 
 # Deterministic fallback used only when the simulator is unreachable or has
 # no matching failed job for the affected nodes — e.g. an anomaly reported
@@ -72,7 +73,9 @@ class PathologistAgent:
         diagnosis regardless of the input anomaly."""
         try:
             async with httpx.AsyncClient(timeout=5.0) as client:
-                resp = await client.get(f"{self.simulator_url}/simulator/jobs", params={"status": "failed"})
+                resp = await client.get(
+                    f"{self.simulator_url}/simulator/jobs", params={"status": "failed"}
+                )
                 resp.raise_for_status()
                 jobs = resp.json().get("jobs", [])
         except httpx.HTTPError as e:

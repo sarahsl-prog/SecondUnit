@@ -1,5 +1,7 @@
+from typing import Any
+
 import httpx
-from typing import Dict, Any, Optional
+
 
 class GrafanaMCPClient:
     """Wrapper for Grafana Cloud MCP tools."""
@@ -11,7 +13,7 @@ class GrafanaMCPClient:
             headers={"Authorization": f"Bearer {api_key}"}
         )
         
-    async def query_metrics(self, query: str, time_range: str = "5m") -> Dict[str, Any]:
+    async def query_metrics(self, query: str, time_range: str = "5m") -> dict[str, Any]:
         """Query Prometheus metrics via Grafana."""
         # Stub: returns mock data for local dev
         return {
@@ -24,7 +26,7 @@ class GrafanaMCPClient:
             }
         }
         
-    async def get_dashboard(self, uid: str) -> Dict[str, Any]:
+    async def get_dashboard(self, uid: str) -> dict[str, Any]:
         return {"dashboard": {"title": "Render Farm Health"}, "status": "success"}
         
     async def list_incidents(self) -> list:

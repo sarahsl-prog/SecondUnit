@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 class Config(BaseSettings):
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.0-flash-exp"

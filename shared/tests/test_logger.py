@@ -1,7 +1,9 @@
 # shared/tests/test_logger.py
-from shared.logger import get_logger
-import logging
 import json
+import logging
+
+from shared.logger import get_logger
+
 
 def test_logger_includes_trace_id(caplog):
     logger = get_logger(trace_id="txn-123", agent_name="Sentry")

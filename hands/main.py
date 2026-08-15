@@ -17,11 +17,10 @@ logger = get_logger(agent_name="Hands")
 
 
 @app.post("/remediate")
-async def remediate(request: dict):
+async def remediate(remediation: RemediationRequest):
     """Entry point from Brain service."""
-    logger.info("remediation_received", trace_id=request.get("trace_id"))
+    logger.info("remediation_received", trace_id=remediation.trace_id)
 
-    remediation = RemediationRequest(**request)
     gcp = GCPComputeClient(
         project_id=config.gcp_project_id,
         zone=config.gcp_zone,

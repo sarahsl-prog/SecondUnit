@@ -34,7 +34,7 @@ Source: `docs/Code-review-Aug14.md`. All 32 findings verified against the actual
 - [ ] **#18 — `GrafanaMCPClient` fully mocked.** Confirmed: `query_metrics`, `get_dashboard`, `list_incidents` all return static literals; `url`/`api_key`/`httpx.AsyncClient` constructed but never used. Real implementation is a scope decision — **see outstanding questions.**
 - [ ] **#19 — `MetricsEmitter`/`LogEmitter` are no-op stubs.** Confirmed — both methods are `pass`. Same scope question as #18.
 - [x] **#20 — `datetime.utcnow()` deprecated.** Confirmed in both `Approval.timestamp` and `AgentLog.timestamp` (`shared/types.py`). Replace with `lambda: datetime.now(timezone.utc)` in both places.
-- [ ] **#21 — `shared/logger.py` import-time side effects.** Confirmed: `structlog.configure(...)` and root-logger setup run at module scope. Move into a `configure_logging()` called from each `main.py`.
+- [x] **#21 — `shared/logger.py` import-time side effects.** Confirmed: `structlog.configure(...)` and root-logger setup run at module scope. Move into a `configure_logging()` called from each `main.py`.
 - [x] **#22 — `SurgeonAgent.ACTION_MAP` mutable class attr.** Confirmed, plain dict, no `ClassVar` annotation. Annotate `ClassVar[dict[str, list[str]]]`.
 - [ ] **#23 — `Quartermaster.send_to_hands` no retry.** Confirmed: `except httpx.HTTPError` logs and immediately `raise`s, no backoff loop, no Dispatcher fallback despite spec §3.3. Add retry (tenacity or manual) + fallback notify path.
 - [ ] **#24 — Dispatcher hardcodes `"mock-ts"`.** Confirmed in `_send_slack` — real `resp.json()` from Slack is discarded. Return the parsed response instead.

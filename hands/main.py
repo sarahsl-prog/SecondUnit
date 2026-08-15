@@ -25,6 +25,7 @@ async def remediate(remediation: RemediationRequest):
     gcp = GCPComputeClient(
         project_id=config.gcp_project_id,
         zone=config.gcp_zone,
+        dry_run=not config.enable_real_gcp_actions,
     )
     surgeon = SurgeonAgent(
         trace_id=remediation.trace_id,

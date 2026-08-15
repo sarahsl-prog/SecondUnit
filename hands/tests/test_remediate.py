@@ -1,11 +1,24 @@
 """Tests for hands/main.py's /remediate endpoint (review #14)."""
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from fastapi.testclient import TestClient
 
+import hands.main as hands_main
 from hands.main import app
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def _isolate_dispatcher_fallback(tmp_path, monkeypatch):
+    """No Slack/Grafana config -> Dispatcher's guaranteed fallback (review
+    outstanding-decision #10) fires on every successful /remediate call
+    here. Point it at a tmp path instead of the real default so tests
+    don't leave files in /tmp."""
+    monkeypatch.setattr(
+        hands_main.config, "dispatcher_fallback_path", str(tmp_path / "fallback.jsonl")
+    )
 
 
 def _valid_remediation_payload():

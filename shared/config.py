@@ -16,6 +16,7 @@ class Config(BaseSettings):
     budget_state_path: str = "/tmp/secondunit-budget-state.json"
     hands_retry_backoff_seconds: float = 1.0
     enable_real_gcp_actions: bool = False
+    dispatcher_fallback_path: str = "/tmp/secondunit-unnotified-incidents.jsonl"
 
     # No env_prefix: .env.example, docker-compose's env_file, and Cloud Run
     # --set-secrets all use unprefixed names (GEMINI_API_KEY, not

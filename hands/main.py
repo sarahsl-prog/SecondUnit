@@ -39,6 +39,7 @@ async def remediate(remediation: RemediationRequest):
         slack_url=config.slack_webhook_url,
         grafana_url=config.grafana_url,
         grafana_key=config.grafana_api_key,
+        fallback_path=config.dispatcher_fallback_path,
     )
     affected_frames = remediation.diagnosis.affected_frames
     dispatch_result = await dispatcher.notify({

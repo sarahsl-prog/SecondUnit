@@ -67,7 +67,7 @@ class SurgeonAgent:
         if action == "reroute_job":
             return await self._call_opencue("reroute", {
                 "job_id": f"job-{request.diagnosis.affected_frames[0]}",
-                "target_node": "node-3",  # Demo: reroute to healthy node
+                "target_node": self._select_healthy_node(request),
             }, caller_action=action)
         elif action == "spin_up_preemptible":
             if self.gcp:
@@ -97,6 +97,18 @@ class SurgeonAgent:
         elif action == "escalate_to_human":
             return {"action": "escalate_to_human", "status": "escalated"}
         return {"action": action, "status": "unknown"}
+
+    def _select_healthy_node(self, request: RemediationRequest) -> str:
+        """Pick the first node in context.healthy_nodes that isn't itself
+        affected. Falls back to the demo default "node-3" only when Sentry/
+        Pathologist didn't populate a healthy_nodes list — real farms
+        should always provide one."""
+        healthy_nodes = request.context.get("healthy_nodes") or []
+        affected = set(request.diagnosis.affected_nodes)
+        for node in healthy_nodes:
+            if node not in affected:
+                return node
+        return "node-3"  # Demo fallback: no healthy_nodes list provided
 
     async def _call_opencue(self, endpoint: str, payload: dict, caller_action: str = "") -> dict:
         async with httpx.AsyncClient() as client:

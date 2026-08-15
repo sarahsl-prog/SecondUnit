@@ -18,7 +18,7 @@ def _mock_opencue_success():
     )
 
 
-def _gpu_remediation():
+def _gpu_remediation(context=None):
     return RemediationRequest(
         trace_id="txn-test",
         diagnosis=Diagnosis(
@@ -31,7 +31,21 @@ def _gpu_remediation():
         ),
         cost_estimate=CostEstimate(preemptible_gpus=2, estimated_cost_usd=4.50, duration_minutes=15),
         approval=Approval(approved=True, budget_remaining_usd=245.50),
+        context=context or {},
     )
+
+
+def _mock_opencue_capture():
+    """Like _mock_opencue_success but returns the mock so callers can
+    inspect what payload was actually posted."""
+    mock_post = AsyncMock(
+        return_value=MagicMock(
+            status_code=200,
+            json=lambda: {"status": "success", "action": "reroute"},
+            raise_for_status=MagicMock(),
+        )
+    )
+    return patch("httpx.AsyncClient.post", mock_post), mock_post
 
 
 @pytest.mark.asyncio
@@ -91,3 +105,33 @@ async def test_surgeon_skips_gcp_gracefully_when_not_configured():
     assert result["status"] == "success"
     spin_up = next(a for a in result["actions_taken"] if a["action"] == "spin_up_preemptible")
     assert spin_up["status"] == "skipped_no_gcp"
+
+
+@pytest.mark.asyncio
+async def test_surgeon_reroutes_to_healthy_node_from_context():
+    """review #8: reroute must use context.healthy_nodes, excluding the
+    affected node, instead of always hardcoding node-3."""
+    agent = SurgeonAgent(trace_id="txn-test", gcp=None)
+    remediation = _gpu_remediation(context={"healthy_nodes": ["node-7", "node-2", "node-5"]})
+
+    patcher, mock_post = _mock_opencue_capture()
+    with patcher:
+        await agent.execute(remediation)
+
+    sent_payload = mock_post.call_args.kwargs["json"]
+    # node-7 is affected_nodes, so node-2 (first healthy, non-affected) wins
+    assert sent_payload["target_node"] == "node-2"
+
+
+@pytest.mark.asyncio
+async def test_surgeon_falls_back_to_node3_without_healthy_nodes():
+    """No context.healthy_nodes provided -> demo fallback stays node-3."""
+    agent = SurgeonAgent(trace_id="txn-test", gcp=None)
+    remediation = _gpu_remediation()  # context={}
+
+    patcher, mock_post = _mock_opencue_capture()
+    with patcher:
+        await agent.execute(remediation)
+
+    sent_payload = mock_post.call_args.kwargs["json"]
+    assert sent_payload["target_node"] == "node-3"

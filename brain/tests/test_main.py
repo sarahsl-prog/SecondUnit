@@ -20,6 +20,26 @@ def _reset_state(tmp_path, monkeypatch):
     reset_dedup_cache()
 
 
+@pytest.fixture(autouse=True)
+def _mock_simulator_get():
+    """Pathologist (review #10) calls out to config.simulator_url for job/
+    log context, which defaults to a compose-only hostname that hangs on
+    DNS in tests. Stub it with no data — these tests only care about
+    /sentry/poll's own auth/idempotency/error-handling behavior, not
+    Pathologist's classification, so an empty simulator is fine."""
+    async def fake_get(url, params=None, **kwargs):
+        if url.endswith("/simulator/status"):
+            payload = {"nodes": {}}
+        elif url.endswith("/simulator/jobs"):
+            payload = {"jobs": []}
+        else:
+            payload = {}
+        return MagicMock(status_code=200, json=lambda: payload, raise_for_status=MagicMock())
+
+    with patch("httpx.AsyncClient.get", new_callable=AsyncMock, side_effect=fake_get):
+        yield
+
+
 @pytest.fixture
 def client():
     return TestClient(app)

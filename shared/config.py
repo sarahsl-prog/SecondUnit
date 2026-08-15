@@ -8,6 +8,7 @@ class Config(BaseSettings):
     gcp_project_id: str = ""
     gcp_zone: str = "us-central1-a"
     hands_service_url: str = "http://hands:8080"
+    simulator_url: str = "http://simulator:8080"
     slack_webhook_url: str = ""
     scheduler_token: str = ""
     poll_cooldown_seconds: int = 300

@@ -70,16 +70,28 @@ def test_full_pipeline(brain_client, simulator_client, mock_hands_response):
     )
     assert trigger_resp.status_code == 200
 
-    # 3. Poll Brain — Sentry → Pathologist → Quartermaster chain
-    # Mock the Hands call so we test only Brain logic in-process
-    with patch(
-        "httpx.AsyncClient.post",
-        new_callable=AsyncMock,
-        return_value=MagicMock(
-            status_code=200,
-            json=lambda: mock_hands_response,
-            raise_for_status=MagicMock(),
+    # 3. Poll Brain — Sentry → Pathologist → Quartermaster chain.
+    # Mock the Hands call so we test only Brain logic in-process. Pathologist
+    # now calls out to the simulator (review #10) for job/log context — proxy
+    # those GETs to the in-process simulator_client instead of hitting the
+    # real network (config.simulator_url resolves to a compose-only hostname
+    # in tests, which would otherwise hang on DNS for every run).
+    async def _proxy_get_to_simulator(url, params=None, **kwargs):
+        path = "/" + url.split("/", 3)[-1]  # strip scheme+host, keep /simulator/...
+        resp = simulator_client.get(path, params=params)
+        return MagicMock(status_code=resp.status_code, json=resp.json, raise_for_status=MagicMock())
+
+    with (
+        patch(
+            "httpx.AsyncClient.post",
+            new_callable=AsyncMock,
+            return_value=MagicMock(
+                status_code=200,
+                json=lambda: mock_hands_response,
+                raise_for_status=MagicMock(),
+            ),
         ),
+        patch("httpx.AsyncClient.get", new_callable=AsyncMock, side_effect=_proxy_get_to_simulator),
     ):
         brain_resp = brain_client.get("/sentry/poll")
 

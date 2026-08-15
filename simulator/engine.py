@@ -42,7 +42,7 @@ class RenderFarmSimulator:
                     node.gpu_mem_percent = max(10.0, node.gpu_mem_percent - 2.0)
             await asyncio.sleep(5)
 
-    def trigger_scenario(self, scenario_name: str, target_node: str = "") -> Dict:
+    def trigger_scenario(self, scenario_name: str, target_node: str = "", scene: str = "") -> Dict:
         if scenario_name not in FAILURE_SCENARIOS:
             raise ValueError(f"Unknown scenario: {scenario_name}")
 
@@ -58,13 +58,29 @@ class RenderFarmSimulator:
         for attr, value in scenario.items():
             if hasattr(node, attr):
                 setattr(node, attr, value)
+        node.status = "failed"
+
+        # Seed a job record so Pathologist can derive real affected_frames
+        # and scene instead of hardcoding them (review #10), rather than
+        # just mutating node metrics with no job ever created.
+        scene_name = scene or DEFAULT_SCENES[0].name
+        frame = len(self.jobs) * 2 + 1
+        job = RenderJob(
+            id=f"job-{frame}",
+            frame=frame,
+            scene=scene_name,
+            assigned_node=target_node,
+            status="failed",
+        )
+        self.jobs.append(job)
 
         logger.info(
             "failure_triggered",
             scenario=scenario_name,
             target_node=target_node,
+            job_id=job.id,
         )
-        return {"scenario": scenario_name, "node": target_node, "applied": True}
+        return {"scenario": scenario_name, "node": target_node, "applied": True, "job_id": job.id}
 
     def reset(self):
         for node in self.nodes.values():
@@ -74,6 +90,8 @@ class RenderFarmSimulator:
             node.disk_io_mbps = 0.0
             node.network_latency_ms = 0.0
             node.status = "idle"
+            node.error_log = ""
+        self.jobs = []
         logger.info("simulator_reset")
 
     def get_status(self) -> Dict:

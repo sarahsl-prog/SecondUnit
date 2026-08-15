@@ -4,7 +4,6 @@ FAILURE_SCENARIOS: Dict[str, Dict[str, Any]] = {
     "gpu_memory_exhaustion": {
         "gpu_mem_percent": 99.0,
         "error_log": "CUDA out of memory",
-        "node_status": "failed",
     },
     "corrupt_scene_file": {
         "error_log": "Scene file malformed at line 4821",

@@ -10,3 +10,4 @@ class RenderNode(BaseModel):
     disk_io_mbps: float = 0.0
     network_latency_ms: float = 0.0
     status: Literal["idle", "rendering", "failed", "offline"] = "idle"
+    error_log: str = ""

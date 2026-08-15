@@ -64,7 +64,9 @@ async def sentry_poll(x_scheduler_token: str = Header(default="")):
             return {"status": "deduped", "anomaly_type": report.anomaly_type}
         _mark_fired(report)
 
-        pathologist = PathologistAgent(grafana=grafana, trace_id=sentry.trace_id)
+        pathologist = PathologistAgent(
+            grafana=grafana, trace_id=sentry.trace_id, simulator_url=config.simulator_url
+        )
         diagnosis = await pathologist.run(report)
 
         quartermaster = QuartermasterAgent(

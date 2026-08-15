@@ -83,10 +83,22 @@ class DispatcherAgent:
             try:
                 resp = await client.post(self.slack_url, json=payload)
                 resp.raise_for_status()
-                return {"ts": "mock-ts", "ok": True}
             except httpx.HTTPError as e:
                 self.logger.error("slack_send_failed", error=str(e))
                 return {}
+
+        try:
+            body = resp.json()
+        except ValueError:
+            # Slack Incoming Webhooks (the SLACK_WEBHOOK_URL shape used
+            # here) return the plain text "ok", not JSON — a message
+            # timestamp is only available from the chat.postMessage Web
+            # API, which needs a bot token rather than a webhook URL. The
+            # message still sent successfully; there's just no ts to
+            # report back.
+            body = {}
+
+        return {"ok": True, "ts": body.get("ts")}
 
     async def _add_grafana_annotation(self, summary: str, context: dict) -> dict:
         # Stub: would call Grafana annotation API

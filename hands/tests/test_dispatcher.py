@@ -7,16 +7,19 @@ from hands.agents.dispatcher import DispatcherAgent
 
 
 @pytest.mark.asyncio
-async def test_dispatcher_sends_notification():
-    mock_response = AsyncMock()
-    mock_response.raise_for_status = MagicMock()
-
-    mock_client = AsyncMock()
-    mock_client.post = AsyncMock(return_value=mock_response)
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock()
-
-    with patch("hands.agents.dispatcher.httpx.AsyncClient", return_value=mock_client):
+async def test_dispatcher_propagates_real_slack_response_ts():
+    """review #24: _send_slack used to hardcode {"ts": "mock-ts"} regardless
+    of what Slack actually returned — this asserts the real parsed
+    response is used instead."""
+    with patch(
+        "httpx.AsyncClient.post",
+        new_callable=AsyncMock,
+        return_value=MagicMock(
+            status_code=200,
+            json=lambda: {"ok": True, "ts": "1755261234.000200"},
+            raise_for_status=MagicMock(),
+        ),
+    ):
         agent = DispatcherAgent(trace_id="txn-test", slack_url="http://mock")
         result = await agent.notify({
             "failure_type": "gpu_memory_exhaustion",
@@ -27,7 +30,36 @@ async def test_dispatcher_sends_notification():
 
     assert result["notification_sent"] is True
     assert "slack" in result["channels"]
-    assert result["slack_message_ts"] == "mock-ts"
+    assert result["slack_message_ts"] == "1755261234.000200"
+
+
+@pytest.mark.asyncio
+async def test_dispatcher_handles_non_json_webhook_response():
+    """Real Slack Incoming Webhooks return the plain text "ok", not JSON —
+    the message still sent, just with no ts available."""
+    def _raise_value_error():
+        raise ValueError("not JSON")
+
+    with patch(
+        "httpx.AsyncClient.post",
+        new_callable=AsyncMock,
+        return_value=MagicMock(
+            status_code=200,
+            json=_raise_value_error,
+            raise_for_status=MagicMock(),
+        ),
+    ):
+        agent = DispatcherAgent(trace_id="txn-test", slack_url="http://mock")
+        result = await agent.notify({
+            "failure_type": "gpu_memory_exhaustion",
+            "scene": "scene_47",
+            "frame": 1847,
+            "actions": ["reroute_job"],
+        })
+
+    assert result["notification_sent"] is True
+    assert "slack" in result["channels"]
+    assert result["slack_message_ts"] is None
 
 
 @pytest.mark.asyncio

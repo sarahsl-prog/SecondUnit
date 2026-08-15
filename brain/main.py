@@ -10,6 +10,7 @@ from brain.agents.quartermaster import QuartermasterAgent
 from brain.agents.sentry import SentryAgent
 from brain.tools.grafana_mcp import GrafanaMCPClient
 from shared.config import Config
+from shared.exceptions import HandsUnreachable
 from shared.logger import get_logger
 from shared.types import AnomalyReport, CostEstimate, RemediationRequest
 
@@ -113,12 +114,12 @@ async def sentry_poll(x_scheduler_token: str = Header(default="")):
         else:
             return {"status": "escalated", "reason": decision["reason"]}
 
-    except httpx.HTTPError as e:
+    except HandsUnreachable as e:
         logger.error("sentry_poll_hands_unreachable", error=str(e))
         await _notify_hands_unreachable(sentry.trace_id, str(e))
         return JSONResponse(
             status_code=502,
-            content={"status": "error", "error": f"hands service unreachable: {e}"},
+            content={"status": "error", "error": str(e)},
         )
     except Exception as e:
         logger.error("sentry_poll_failed", error=str(e))

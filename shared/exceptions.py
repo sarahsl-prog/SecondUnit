@@ -1,8 +1,3 @@
-class AgentTimeout(Exception):
-    """Raised when an agent exceeds its execution timeout."""
-
 class HandsUnreachable(Exception):
-    """Raised when Brain cannot reach Hands service."""
-
-class BudgetExceeded(Exception):
-    """Raised when Quartermaster denies due to budget."""
+    """Raised when Brain cannot reach Hands service after exhausting
+    retries (see QuartermasterAgent.send_to_hands, review #23)."""

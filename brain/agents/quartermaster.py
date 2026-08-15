@@ -6,6 +6,7 @@ from pathlib import Path
 import httpx
 import yaml
 
+from shared.exceptions import HandsUnreachable
 from shared.logger import get_logger
 from shared.types import Approval, CostEstimate, Diagnosis
 
@@ -170,4 +171,6 @@ class QuartermasterAgent:
                         await asyncio.sleep(backoff_base_seconds * (2 ** (attempt - 1)))
 
         self.logger.error("hands_unreachable", attempts=max_attempts, error=str(last_error))
-        raise last_error
+        raise HandsUnreachable(
+            f"Hands unreachable after {max_attempts} attempts: {last_error}"
+        ) from last_error

@@ -4,6 +4,7 @@ import httpx
 import pytest
 
 from brain.agents.quartermaster import QuartermasterAgent
+from shared.exceptions import HandsUnreachable
 from shared.types import Diagnosis
 
 
@@ -137,7 +138,7 @@ async def test_send_to_hands_raises_after_exhausting_retries(tmp_path):
         patch(
             "httpx.AsyncClient.post", new_callable=AsyncMock, side_effect=httpx.ConnectError("down")
         ) as mock_post,
-        pytest.raises(httpx.ConnectError),
+        pytest.raises(HandsUnreachable),
     ):
         await agent.send_to_hands({"trace_id": "txn-test"}, backoff_base_seconds=0)
 

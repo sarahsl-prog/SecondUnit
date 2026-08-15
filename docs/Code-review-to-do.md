@@ -46,7 +46,7 @@ Source: `docs/Code-review-Aug14.md`. All 32 findings verified against the actual
 
 - [x] **#28 — Unused `Optional` imports.** Confirmed in `brain/agents/pathologist.py`, `brain/agents/sentry.py` (both import but never use `Optional`); review also names `brain/tools/grafana_mcp.py` — worth double-checking that one specifically since `Optional` is used there in a type hint (`get_dashboard`/method signatures) — re-verify before blindly running `ruff --fix`.
 - [x] **#29 — Inconsistent import ordering.** Confirmed generally true across files (e.g. `random` after local imports in sentry.py/pathologist.py). Run `ruff --fix` with `I001` once #16 lands.
-- [ ] **#30 — Unused exceptions.** Confirmed: `AgentTimeout`, `HandsUnreachable`, `BudgetExceeded` defined in `shared/exceptions.py`, never raised or imported elsewhere. Wire them in (`BudgetExceeded` on deny, `HandsUnreachable` after #23's retry exhaustion, `AgentTimeout` on timeout wrappers) or delete.
+- [x] **#30 — Unused exceptions.** Confirmed: `AgentTimeout`, `HandsUnreachable`, `BudgetExceeded` defined in `shared/exceptions.py`, never raised or imported elsewhere. Wire them in (`BudgetExceeded` on deny, `HandsUnreachable` after #23's retry exhaustion, `AgentTimeout` on timeout wrappers) or delete.
 - [x] **#31 — Dead `DEFAULT_SCENES` import.** (Resolved as a side effect of #10 — DEFAULT_SCENES is now used to seed the default scene name in trigger_scenario().) Confirmed in `simulator/engine.py:5`, imported, never referenced elsewhere in the file. Remove or use to seed jobs at startup.
 - [x] **#32 — `typing.List` instead of `list`.** Confirmed throughout `shared/types.py` (`List[str]`, `List[int]` used 4x). Replace with builtin generics, drop the import.
 

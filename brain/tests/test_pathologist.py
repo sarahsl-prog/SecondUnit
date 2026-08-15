@@ -9,7 +9,9 @@ from shared.types import AnomalyReport
 
 @pytest.fixture
 def mock_grafana():
-    return GrafanaMCPClient(url="http://mock", api_key="test")
+    """Empty url -> GrafanaMCPClient's own built-in mock fallback (review
+    #18), not a real HTTP call."""
+    return GrafanaMCPClient(url="", api_key="test")
 
 
 def _anomaly(nodes):

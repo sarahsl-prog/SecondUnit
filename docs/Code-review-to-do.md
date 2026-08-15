@@ -31,7 +31,7 @@ Source: `docs/Code-review-Aug14.md`. All 32 findings verified against the actual
 
 - [x] **#16 — No `pytest.ini_options`/ruff/mypy config, no CI.** Confirmed absent from `pyproject.toml`. Add config block from review; wire into CI once one exists.
 - [x] **#17 — `mypy` duplicate `main` module.** Confirmed: `brain/main.py`, `hands/main.py`, `simulator/main.py` share bare name, no package roots declared. Fixed by #1's `__init__.py` additions + `explicit_package_bases = true`.
-- [ ] **#18 — `GrafanaMCPClient` fully mocked.** Confirmed: `query_metrics`, `get_dashboard`, `list_incidents` all return static literals; `url`/`api_key`/`httpx.AsyncClient` constructed but never used. Real implementation is a scope decision — **see outstanding questions.**
+- [x] **#18 — `GrafanaMCPClient` fully mocked.** Confirmed: `query_metrics`, `get_dashboard`, `list_incidents` all return static literals; `url`/`api_key`/`httpx.AsyncClient` constructed but never used. Real implementation is a scope decision — **see outstanding questions.**
 - [ ] **#19 — `MetricsEmitter`/`LogEmitter` are no-op stubs.** Confirmed — both methods are `pass`. Same scope question as #18.
 - [x] **#20 — `datetime.utcnow()` deprecated.** Confirmed in both `Approval.timestamp` and `AgentLog.timestamp` (`shared/types.py`). Replace with `lambda: datetime.now(timezone.utc)` in both places.
 - [x] **#21 — `shared/logger.py` import-time side effects.** Confirmed: `structlog.configure(...)` and root-logger setup run at module scope. Move into a `configure_logging()` called from each `main.py`.

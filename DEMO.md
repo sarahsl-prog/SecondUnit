@@ -196,7 +196,7 @@ After the demo, attendees can:
 | Problem | Fix |
 |---------|-----|
 | `docker-compose up` fails | Run `uv sync` first, then `docker-compose up --build` |
-| Simulator not emitting metrics | `MetricsEmitter`/`LogEmitter` are stubs (see review #19) — nothing pushes to Grafana/Loki yet, this is expected until that's wired up |
+| Simulator not emitting metrics | Point Prometheus/Grafana Agent at `GET /simulator/metrics` (pull) — there's no push client yet. Logs: set `GRAFANA_URL`/`GRAFANA_API_KEY` for real Loki push, or leave unset to no-op locally (review #19) |
 | Brain not connecting to Grafana MCP | Verify `GRAFANA_API_KEY` in `.env` |
 | Slack not receiving messages | Check `SLACK_WEBHOOK_URL` in `.env` |
 | All services up but no logs | Run `docker-compose logs -f` to tail all services |

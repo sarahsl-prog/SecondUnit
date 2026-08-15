@@ -3,6 +3,7 @@ import asyncio
 from shared.logger import get_logger
 from simulator.failures import FAILURE_SCENARIOS
 from simulator.jobs import RenderJob
+from simulator.logs import LogEmitter
 from simulator.nodes import RenderNode
 from simulator.scenes import DEFAULT_SCENES
 
@@ -10,13 +11,17 @@ logger = get_logger(agent_name="Simulator")
 
 
 class RenderFarmSimulator:
-    def __init__(self, node_count: int = 8):
+    def __init__(self, node_count: int = 8, log_emitter: LogEmitter | None = None):
         self.nodes: dict[str, RenderNode] = {
             f"node-{i}": RenderNode(id=f"node-{i}") for i in range(node_count)
         }
         self.jobs: list[RenderJob] = []
         self.running = False
         self._task = None
+        # review #19: LogEmitter previously existed but was never
+        # instantiated anywhere — wire it in so a triggered failure's
+        # error_log actually reaches Loki when configured.
+        self.log_emitter = log_emitter or LogEmitter()
 
     def start(self):
         self.running = True
@@ -42,7 +47,9 @@ class RenderFarmSimulator:
                     node.gpu_mem_percent = max(10.0, node.gpu_mem_percent - 2.0)
             await asyncio.sleep(5)
 
-    def trigger_scenario(self, scenario_name: str, target_node: str = "", scene: str = "") -> dict:
+    async def trigger_scenario(
+        self, scenario_name: str, target_node: str = "", scene: str = ""
+    ) -> dict:
         if scenario_name not in FAILURE_SCENARIOS:
             raise ValueError(f"Unknown scenario: {scenario_name}")
 
@@ -59,6 +66,9 @@ class RenderFarmSimulator:
             if hasattr(node, attr):
                 setattr(node, attr, value)
         node.status = "failed"
+
+        if node.error_log:
+            await self.log_emitter.emit_log(target_node, node.error_log, level="error")
 
         # Seed a job record so Pathologist can derive real affected_frames
         # and scene instead of hardcoding them (review #10), rather than

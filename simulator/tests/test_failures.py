@@ -30,3 +30,17 @@ def test_trigger_all_five_scenarios(scenario_name):
 
     jobs = client.get("/simulator/jobs", params={"node": "node-3"}).json()["jobs"]
     assert any(j["id"] == data["job_id"] for j in jobs)
+
+
+def test_metrics_endpoint_returns_prometheus_exposition_format():
+    """review #19: MetricsEmitter previously existed as a dead stub with
+    no route ever calling it."""
+    client.post("/simulator/reset")
+    client.post("/simulator/trigger/gpu_memory_exhaustion", params={"target_node": "node-7"})
+
+    resp = client.get("/simulator/metrics")
+
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("text/plain")
+    assert 'node_gpu_mem_percent{node="node-7"} 99.0' in resp.text
+    assert "# TYPE render_queue_depth gauge" in resp.text
